@@ -30,6 +30,7 @@ android/local.properties
 
 # iOS
 ios/build/
+ios/Secrets.xcconfig
 *.xcworkspace
 !*.xcworkspace/contents.xcworkspacedata
 
