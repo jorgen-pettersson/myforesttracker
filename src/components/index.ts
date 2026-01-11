@@ -8,3 +8,4 @@ export * from './Sidebar/ItemCard';
 export * from './Map/InventoryMap';
 export * from './MediaGallery';
 export * from './MediaViewer';
+export * from './AboutModal';

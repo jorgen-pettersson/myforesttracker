@@ -4,6 +4,7 @@ import {InventoryItem, HistoryEntry, MediaItem} from '../types';
 import {itemModalStyles as styles, mediaStyles} from '../styles';
 import {useMedia} from '../hooks';
 import {MediaGallery} from './MediaGallery';
+import {formatArea} from '../utils';
 
 const MAX_MEDIA_ITEMS = 5;
 
@@ -160,7 +161,7 @@ export function ItemModal({
             {item.type === 'area' && item.area && (
               <View style={styles.viewField}>
                 <Text style={styles.viewLabel}>Area</Text>
-                <Text style={styles.viewValue}>{item.area.toFixed(2)} m²</Text>
+                <Text style={styles.viewValue}>{formatArea(item.area)}</Text>
               </View>
             )}
 

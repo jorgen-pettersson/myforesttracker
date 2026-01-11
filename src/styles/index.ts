@@ -6,3 +6,4 @@ export * from './SidebarStyles';
 export * from './ItemCardStyles';
 export * from './MapStyles';
 export * from './MediaStyles';
+export * from './AboutModalStyles';

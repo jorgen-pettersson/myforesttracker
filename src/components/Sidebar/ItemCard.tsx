@@ -2,6 +2,7 @@ import React from 'react';
 import {View, Text, TouchableOpacity} from 'react-native';
 import {InventoryItem} from '../../types';
 import {itemCardStyles as styles} from '../../styles';
+import {formatArea} from '../../utils';
 
 interface ItemCardProps {
   item: InventoryItem;
@@ -34,7 +35,7 @@ export function ItemCard({item, onToggleVisibility, onDelete, onView, onRepositi
         {new Date(item.created).toLocaleString()}
       </Text>
       {item.type === 'area' && item.area && (
-        <Text style={styles.itemDetail}>Area: {item.area.toFixed(2)} m²</Text>
+        <Text style={styles.itemDetail}>Area: {formatArea(item.area)}</Text>
       )}
       <View style={styles.buttonRow}>
         <TouchableOpacity

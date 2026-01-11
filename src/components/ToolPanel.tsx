@@ -2,6 +2,7 @@ import React from 'react';
 import {View, Text, TouchableOpacity, TouchableWithoutFeedback} from 'react-native';
 import {toolPanelStyles as styles} from '../styles';
 import {DrawingMode} from '../types';
+import {useLocalization, Language} from '../localization';
 
 type MapType = 'standard' | 'satellite' | 'hybrid';
 
@@ -19,6 +20,9 @@ interface ToolPanelProps {
   onClearDrawing: () => void;
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
+  onShowAbout: () => void;
+  language: Language;
+  onSetLanguage: (lang: Language) => void;
 }
 
 export function ToolPanel({
@@ -35,7 +39,12 @@ export function ToolPanel({
   onClearDrawing,
   sidebarVisible,
   onToggleSidebar,
+  onShowAbout,
+  language,
+  onSetLanguage,
 }: ToolPanelProps) {
+  const {t} = useLocalization();
+
   if (!visible) {
     return null;
   }
@@ -43,6 +52,10 @@ export function ToolPanel({
   const handleAction = (action: () => void) => {
     action();
     onClose();
+  };
+
+  const toggleLanguage = () => {
+    onSetLanguage(language === 'en' ? 'sv' : 'en');
   };
 
   return (
@@ -53,7 +66,7 @@ export function ToolPanel({
 
       <View style={styles.sideSheet}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Tools</Text>
+          <Text style={styles.headerTitle}>{t('tools')}</Text>
         </View>
 
         <View style={styles.menuItems}>
@@ -62,7 +75,7 @@ export function ToolPanel({
             onPress={() => handleAction(onToggleGPS)}>
             <Text style={styles.buttonIcon}>📍</Text>
             <Text style={[styles.buttonText, gpsTracking && styles.activeButtonText]}>
-              GPS Tracking
+              {t('gpsTracking')}
             </Text>
           </TouchableOpacity>
 
@@ -71,7 +84,7 @@ export function ToolPanel({
             onPress={() => handleAction(onToggleMapType)}>
             <Text style={styles.buttonIcon}>🛰</Text>
             <Text style={[styles.buttonText, mapType !== 'standard' && styles.activeButtonText]}>
-              Satellite View
+              {t('satelliteView')}
             </Text>
           </TouchableOpacity>
 
@@ -82,7 +95,7 @@ export function ToolPanel({
             onPress={() => handleAction(() => onSetDrawingMode(drawingMode === 'point' ? 'none' : 'point'))}>
             <Text style={styles.buttonIcon}>📌</Text>
             <Text style={[styles.buttonText, drawingMode === 'point' && styles.activeButtonText]}>
-              Add Point
+              {t('addPoint')}
             </Text>
           </TouchableOpacity>
 
@@ -91,7 +104,7 @@ export function ToolPanel({
             onPress={() => handleAction(() => onSetDrawingMode(drawingMode === 'area' ? 'none' : 'area'))}>
             <Text style={styles.buttonIcon}>⬜</Text>
             <Text style={[styles.buttonText, drawingMode === 'area' && styles.activeButtonText]}>
-              Draw Area
+              {t('drawArea')}
             </Text>
           </TouchableOpacity>
 
@@ -100,7 +113,7 @@ export function ToolPanel({
               style={styles.toolButton}
               onPress={() => handleAction(onCompleteArea)}>
               <Text style={styles.buttonIcon}>✓</Text>
-              <Text style={styles.buttonText}>Complete Area</Text>
+              <Text style={styles.buttonText}>{t('completeArea')}</Text>
             </TouchableOpacity>
           )}
 
@@ -109,7 +122,7 @@ export function ToolPanel({
               style={styles.toolButton}
               onPress={() => handleAction(onClearDrawing)}>
               <Text style={styles.buttonIcon}>✗</Text>
-              <Text style={styles.buttonText}>Clear Drawing</Text>
+              <Text style={styles.buttonText}>{t('clearDrawing')}</Text>
             </TouchableOpacity>
           )}
 
@@ -120,8 +133,26 @@ export function ToolPanel({
             onPress={() => handleAction(onToggleSidebar)}>
             <Text style={styles.buttonIcon}>📋</Text>
             <Text style={[styles.buttonText, sidebarVisible && styles.activeButtonText]}>
-              Items List
+              {t('itemsList')}
             </Text>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.toolButton}
+            onPress={() => handleAction(toggleLanguage)}>
+            <Text style={styles.buttonIcon}>🌐</Text>
+            <Text style={styles.buttonText}>
+              {t('language')}: {language === 'en' ? t('english') : t('swedish')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.toolButton}
+            onPress={() => handleAction(onShowAbout)}>
+            <Text style={styles.buttonIcon}>ℹ️</Text>
+            <Text style={styles.buttonText}>{t('about')}</Text>
           </TouchableOpacity>
         </View>
       </View>

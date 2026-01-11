@@ -10,7 +10,9 @@ import {
   ItemModal,
   Sidebar,
   InventoryMap,
+  AboutModal,
 } from './src/components';
+import {LocalizationProvider, useLocalization, Language} from './src/localization';
 
 type MapType = 'standard' | 'satellite' | 'hybrid';
 type ModalMode = 'view' | 'edit' | 'create';
@@ -18,8 +20,9 @@ type ModalMode = 'view' | 'edit' | 'create';
 const SWIPE_EDGE_WIDTH = 30;
 const SWIPE_THRESHOLD = 50;
 
-function App() {
+function AppContent() {
   const {region, setRegion, gpsTracking, toggleGPSTracking} = useLocation();
+  const {language, setLanguage} = useLocalization();
   const {items, addItem, updateItem, deleteItem, toggleItemVisibility, calculateArea, importItems, appendItems} = useInventory();
   const {exportData, importData, importGeoJSON} = useExportImport();
 
@@ -33,6 +36,7 @@ function App() {
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [mapType, setMapType] = useState<MapType>('standard');
+  const [aboutVisible, setAboutVisible] = useState(false);
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -277,6 +281,9 @@ function App() {
         onClearDrawing={clearDrawing}
         sidebarVisible={sidebarVisible}
         onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
+        onShowAbout={() => setAboutVisible(true)}
+        language={language}
+        onSetLanguage={setLanguage}
       />
 
       <Sidebar
@@ -301,10 +308,23 @@ function App() {
         onEdit={handleSwitchToEdit}
       />
 
+      <AboutModal
+        visible={aboutVisible}
+        onClose={() => setAboutVisible(false)}
+      />
+
       {/* Edge swipe zones */}
       <View style={styles.leftSwipeZone} {...leftPanResponder.panHandlers} />
       <View style={styles.rightSwipeZone} {...rightPanResponder.panHandlers} />
     </View>
+  );
+}
+
+function App() {
+  return (
+    <LocalizationProvider>
+      <AppContent />
+    </LocalizationProvider>
   );
 }
 

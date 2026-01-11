@@ -43,4 +43,11 @@ hermesEnabled=true
 # Note: Only works with ReactActivity and should not be used with custom Activity.
 edgeToEdgeEnabled=false
 
-org.gradle.java.home=/usr/lib/jvm/amazon-corretto-17.0.17.10.1-linux-x64/
+# Set this to your Java home path
+org.gradle.java.home=/path/to/your/jdk
+
+# Release signing config - fill in your values
+MYAPP_RELEASE_STORE_FILE=myforesttracker-release-key.keystore
+MYAPP_RELEASE_KEY_ALIAS=your_key_alias
+MYAPP_RELEASE_STORE_PASSWORD=your_store_password
+MYAPP_RELEASE_KEY_PASSWORD=your_key_password

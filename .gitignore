@@ -23,10 +23,11 @@ android/build/
 android/.gradle/
 android/app/.cxx/
 android/local.properties
+android/gradle.properties
+android/app/*.keystore
+!android/app/debug.keystore
 *.apk
 *.aab
-*.keystore
-!debug.keystore
 
 # iOS
 ios/build/
