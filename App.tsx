@@ -1,8 +1,8 @@
 import React, {useState, useRef} from 'react';
-import {View, Alert, StyleSheet, PanResponder, Dimensions} from 'react-native';
+import {View, Alert, StyleSheet, PanResponder, Dimensions, ActivityIndicator} from 'react-native';
 
 import {InventoryItem, Coordinate, DrawingMode} from './src/types';
-import {useLocation, useInventory, useExportImport} from './src/hooks';
+import {useLocation, useInventory, useExportImport, useSettings} from './src/hooks';
 import {
   Header,
   ToolPanel,
@@ -14,14 +14,14 @@ import {
 } from './src/components';
 import {LocalizationProvider, useLocalization, Language} from './src/localization';
 
-type MapType = 'standard' | 'satellite' | 'hybrid';
 type ModalMode = 'view' | 'edit' | 'create';
 
 const SWIPE_EDGE_WIDTH = 30;
 const SWIPE_THRESHOLD = 50;
 
 function AppContent() {
-  const {region, setRegion, gpsTracking, toggleGPSTracking} = useLocation();
+  const {gpsTracking, setGpsTracking, mapType, toggleMapType, isLoaded} = useSettings();
+  const {region, setRegion, toggleGPSTracking} = useLocation({gpsTracking, setGpsTracking});
   const {language, setLanguage} = useLocalization();
   const {items, addItem, updateItem, deleteItem, toggleItemVisibility, calculateArea, importItems, appendItems} = useInventory();
   const {exportData, importData, importGeoJSON} = useExportImport();
@@ -35,7 +35,6 @@ function AppContent() {
   const [repositionItem, setRepositionItem] = useState<InventoryItem | null>(null);
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [mapType, setMapType] = useState<MapType>('standard');
   const [aboutVisible, setAboutVisible] = useState(false);
 
   const screenWidth = Dimensions.get('window').width;
@@ -209,10 +208,6 @@ function AppContent() {
     setDrawingMode('none');
   };
 
-  const toggleMapType = () => {
-    setMapType(mapType === 'standard' ? 'satellite' : 'standard');
-  };
-
   const handleExport = async (format: 'json' | 'csv' | 'geojson' | 'all') => {
     await exportData(items, format);
   };
@@ -247,6 +242,14 @@ function AppContent() {
       ],
     );
   };
+
+  if (!isLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#228B22" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -331,6 +334,12 @@ function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
   },
   leftSwipeZone: {
     position: 'absolute',

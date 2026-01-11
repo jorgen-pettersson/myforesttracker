@@ -1,6 +1,9 @@
 import {TranslationKeys} from './en';
 
 export const sv: Record<TranslationKeys, string> = {
+  // App
+  appName: 'My Forest Tracker',
+
   // General
   cancel: 'Avbryt',
   save: 'Spara',

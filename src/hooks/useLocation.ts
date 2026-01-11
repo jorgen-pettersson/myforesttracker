@@ -1,13 +1,17 @@
-import {useState, useRef, useEffect} from 'react';
+import {useState, useRef, useEffect, useCallback} from 'react';
 import {Platform, PermissionsAndroid} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import {Region, Coordinate} from '../types';
 import {DEFAULT_REGION} from '../constants';
 
-export function useLocation() {
+interface UseLocationProps {
+  gpsTracking: boolean;
+  setGpsTracking: (value: boolean) => void;
+}
+
+export function useLocation({gpsTracking, setGpsTracking}: UseLocationProps) {
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [currentLocation, setCurrentLocation] = useState<Coordinate | null>(null);
-  const [gpsTracking, setGpsTracking] = useState(false);
   const watchId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -51,14 +55,9 @@ export function useLocation() {
     );
   };
 
-  const toggleGPSTracking = () => {
+  // Start/stop GPS watch based on gpsTracking state
+  useEffect(() => {
     if (gpsTracking) {
-      if (watchId.current !== null) {
-        Geolocation.clearWatch(watchId.current);
-        watchId.current = null;
-      }
-      setGpsTracking(false);
-    } else {
       watchId.current = Geolocation.watchPosition(
         position => {
           const {latitude, longitude} = position.coords;
@@ -74,9 +73,24 @@ export function useLocation() {
         },
         {enableHighAccuracy: true, distanceFilter: 10},
       );
-      setGpsTracking(true);
+    } else {
+      if (watchId.current !== null) {
+        Geolocation.clearWatch(watchId.current);
+        watchId.current = null;
+      }
     }
-  };
+
+    return () => {
+      if (watchId.current !== null) {
+        Geolocation.clearWatch(watchId.current);
+        watchId.current = null;
+      }
+    };
+  }, [gpsTracking]);
+
+  const toggleGPSTracking = useCallback(() => {
+    setGpsTracking(!gpsTracking);
+  }, [gpsTracking, setGpsTracking]);
 
   return {
     region,

@@ -1,4 +1,7 @@
 export const en = {
+  // App
+  appName: 'My Forest Tracker',
+
   // General
   cancel: 'Cancel',
   save: 'Save',
