@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, TextInput, TouchableOpacity, Modal, ScrollView} from 'react-native';
+import {View, Text, TextInput, TouchableOpacity, Modal, ScrollView, StyleSheet} from 'react-native';
 import {InventoryItem, HistoryEntry, MediaItem} from '../types';
 import {itemModalStyles as styles, mediaStyles} from '../styles';
 import {useMedia} from '../hooks';
@@ -7,6 +7,17 @@ import {MediaGallery} from './MediaGallery';
 import {formatArea} from '../utils';
 
 const MAX_MEDIA_ITEMS = 5;
+
+const PRESET_COLORS = [
+  {name: 'Green', value: '#00FF00'},
+  {name: 'Red', value: '#FF0000'},
+  {name: 'Blue', value: '#0000FF'},
+  {name: 'Yellow', value: '#FFFF00'},
+  {name: 'Orange', value: '#FFA500'},
+  {name: 'Purple', value: '#800080'},
+  {name: 'Pink', value: '#FFC0CB'},
+  {name: 'Brown', value: '#A52A2A'},
+];
 
 type ModalMode = 'view' | 'edit' | 'create';
 
@@ -162,6 +173,34 @@ export function ItemModal({
               <View style={styles.viewField}>
                 <Text style={styles.viewLabel}>Area</Text>
                 <Text style={styles.viewValue}>{formatArea(item.area)}</Text>
+              </View>
+            )}
+
+            {/* Color picker for areas */}
+            {item.type === 'area' && !isViewMode && (
+              <View style={styles.viewField}>
+                <Text style={styles.label}>Color</Text>
+                <View style={colorStyles.colorRow}>
+                  {PRESET_COLORS.map(color => (
+                    <TouchableOpacity
+                      key={color.value}
+                      style={[
+                        colorStyles.colorButton,
+                        {backgroundColor: color.value},
+                        (item.color || '#00FF00') === color.value && colorStyles.colorButtonSelected,
+                      ]}
+                      onPress={() => onChangeItem({...item, color: color.value})}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Color display for areas in view mode */}
+            {item.type === 'area' && isViewMode && item.color && (
+              <View style={styles.viewField}>
+                <Text style={styles.viewLabel}>Color</Text>
+                <View style={[colorStyles.colorPreview, {backgroundColor: item.color}]} />
               </View>
             )}
 
@@ -345,3 +384,29 @@ export function ItemModal({
     </Modal>
   );
 }
+
+const colorStyles = StyleSheet.create({
+  colorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  colorButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#ddd',
+  },
+  colorButtonSelected: {
+    borderColor: '#000',
+    borderWidth: 3,
+  },
+  colorPreview: {
+    width: 30,
+    height: 30,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+});

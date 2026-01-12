@@ -69,6 +69,7 @@ export function useExportImport() {
           properties: {
             ...mergedProps,
             area_sqm: item.area,
+            color: item.color,
           },
         };
       }
@@ -445,6 +446,11 @@ export function useExportImport() {
           }
         }
 
+        // Get color from properties (support various common property names)
+        const color = props.color || props.Color || props.COLOR ||
+                      props.fill || props.Fill || props.FILL ||
+                      props.fillColor || props.FillColor || undefined;
+
         const area: InventoryArea = {
           id,
           type: 'area',
@@ -456,6 +462,7 @@ export function useExportImport() {
           history: [],
           media: [],
           properties: props,
+          color,
         };
         items.push(area);
       }

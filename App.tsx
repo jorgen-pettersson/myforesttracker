@@ -140,6 +140,7 @@ function AppContent() {
       created: new Date().toISOString(),
       history: [],
       media: [],
+      color: '#00FF00', // Default green
     });
     setModalVisible(true);
     setDrawingMode('none');
