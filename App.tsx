@@ -1,7 +1,7 @@
 import React, {useState, useRef} from 'react';
 import {View, Alert, StyleSheet, PanResponder, Dimensions, ActivityIndicator} from 'react-native';
 
-import {InventoryItem, Coordinate, DrawingMode} from './src/types';
+import {InventoryItem, Coordinate, DrawingMode, Region} from './src/types';
 import {useLocation, useInventory, useExportImport, useSettings} from './src/hooks';
 import {
   Header,
@@ -13,6 +13,7 @@ import {
   AboutModal,
   PropertyMappingModal,
 } from './src/components';
+import type {InventoryMapRef} from './src/components/Map/InventoryMap';
 import {LocalizationProvider, useLocalization, Language} from './src/localization';
 
 type ModalMode = 'view' | 'edit' | 'create';
@@ -26,6 +27,7 @@ function AppContent() {
   const {language, setLanguage} = useLocalization();
   const {items, addItem, updateItem, deleteItem, toggleItemVisibility, calculateArea, importItems, appendItems} = useInventory();
   const {exportData, importData, parseGeoJSON, processGeoJSON} = useExportImport();
+  const mapRef = useRef<InventoryMapRef>(null);
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [drawingMode, setDrawingMode] = useState<DrawingMode>('none');
@@ -42,6 +44,7 @@ function AppContent() {
   const [propertyMappingVisible, setPropertyMappingVisible] = useState(false);
   const [geoJsonFeatures, setGeoJsonFeatures] = useState<any[]>([]);
   const [geoJsonProperties, setGeoJsonProperties] = useState<string[]>([]);
+  const [geoJsonSuggestedName, setGeoJsonSuggestedName] = useState<string | undefined>();
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -171,10 +174,52 @@ function AppContent() {
   };
 
   const handleView = (item: InventoryItem) => {
-    setCurrentItem(item);
-    setModalMode('view');
-    setModalVisible(true);
+    // Close sidebar first
     setSidebarVisible(false);
+
+    // Zoom to the item's location
+    let targetRegion: Region | null = null;
+
+    if (item.type === 'point') {
+      targetRegion = {
+        latitude: item.coordinate.latitude,
+        longitude: item.coordinate.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      };
+    } else if (item.type === 'area' && item.coordinates.length > 0) {
+      // Calculate bounding box for the area
+      const lats = item.coordinates.map(c => c.latitude);
+      const lngs = item.coordinates.map(c => c.longitude);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+
+      // Add padding around the area
+      const latPadding = (maxLat - minLat) * 0.3 || 0.005;
+      const lngPadding = (maxLng - minLng) * 0.3 || 0.005;
+
+      targetRegion = {
+        latitude: (minLat + maxLat) / 2,
+        longitude: (minLng + maxLng) / 2,
+        latitudeDelta: (maxLat - minLat) + latPadding,
+        longitudeDelta: (maxLng - minLng) + lngPadding,
+      };
+    }
+
+    // Animate map after sidebar closes, then open modal
+    setTimeout(() => {
+      if (targetRegion) {
+        mapRef.current?.animateToRegion(targetRegion, 300);
+      }
+      // Open modal after animation starts
+      setTimeout(() => {
+        setCurrentItem(item);
+        setModalMode('view');
+        setModalVisible(true);
+      }, 350);
+    }, 100);
   };
 
   const handleSwitchToEdit = () => {
@@ -232,6 +277,7 @@ function AppContent() {
             if (parsed) {
               setGeoJsonFeatures(parsed.features);
               setGeoJsonProperties(parsed.propertyKeys);
+              setGeoJsonSuggestedName(parsed.suggestedNameKey);
               setPropertyMappingVisible(true);
             }
           },
@@ -260,12 +306,14 @@ function AppContent() {
     setPropertyMappingVisible(false);
     setGeoJsonFeatures([]);
     setGeoJsonProperties([]);
+    setGeoJsonSuggestedName(undefined);
   };
 
   const handlePropertyMappingCancel = () => {
     setPropertyMappingVisible(false);
     setGeoJsonFeatures([]);
     setGeoJsonProperties([]);
+    setGeoJsonSuggestedName(undefined);
   };
 
   if (!isLoaded) {
@@ -281,6 +329,7 @@ function AppContent() {
       <Header isOnline={isOnline} gpsTracking={gpsTracking} />
 
       <InventoryMap
+        ref={mapRef}
         region={region}
         onRegionChange={setRegion}
         mapType={mapType}
@@ -345,6 +394,7 @@ function AppContent() {
       <PropertyMappingModal
         visible={propertyMappingVisible}
         properties={geoJsonProperties}
+        suggestedNameProperty={geoJsonSuggestedName}
         onConfirm={handlePropertyMappingConfirm}
         onCancel={handlePropertyMappingCancel}
       />

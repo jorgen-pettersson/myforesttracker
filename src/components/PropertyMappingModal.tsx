@@ -5,6 +5,7 @@ import {useLocalization} from '../localization';
 interface PropertyMappingModalProps {
   visible: boolean;
   properties: string[];
+  suggestedNameProperty?: string;
   onConfirm: (nameProperty: string, notesProperty: string) => void;
   onCancel: () => void;
 }
@@ -12,6 +13,7 @@ interface PropertyMappingModalProps {
 export function PropertyMappingModal({
   visible,
   properties,
+  suggestedNameProperty,
   onConfirm,
   onCancel,
 }: PropertyMappingModalProps) {
@@ -26,12 +28,14 @@ export function PropertyMappingModal({
   // Auto-select defaults on first render
   React.useEffect(() => {
     if (properties.length > 0) {
-      const defaultName = properties.find(p => nameDefaults.includes(p)) || '';
+      // Prefer the suggested name property (e.g., forestand.placeId), fall back to common defaults
+      const defaultName = suggestedNameProperty ||
+        properties.find(p => nameDefaults.includes(p)) || '';
       const defaultNotes = properties.find(p => notesDefaults.includes(p)) || '';
       setNameProperty(defaultName);
       setNotesProperty(defaultNotes);
     }
-  }, [properties]);
+  }, [properties, suggestedNameProperty]);
 
   const handleConfirm = () => {
     onConfirm(nameProperty, notesProperty);

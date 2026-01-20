@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef, useImperativeHandle, forwardRef} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import MapView, {Marker, Polygon, PROVIDER_GOOGLE} from 'react-native-maps';
 import {InventoryItem, InventoryArea, Region, Coordinate, DrawingMode} from '../../types';
@@ -171,7 +171,11 @@ interface InventoryMapProps {
   onItemPress?: (item: InventoryItem) => void;
 }
 
-export function InventoryMap({
+export interface InventoryMapRef {
+  animateToRegion: (region: Region, duration?: number) => void;
+}
+
+export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(({
   region,
   onRegionChange,
   mapType,
@@ -183,10 +187,19 @@ export function InventoryMap({
   onCompleteReposition,
   onCancelReposition,
   onItemPress,
-}: InventoryMapProps) {
+}, ref) => {
+  const mapRef = useRef<MapView>(null);
+
+  useImperativeHandle(ref, () => ({
+    animateToRegion: (targetRegion: Region, duration = 500) => {
+      mapRef.current?.animateToRegion(targetRegion, duration);
+    },
+  }));
+
   return (
     <View style={styles.mapContainer}>
       <MapView
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={region}
@@ -216,6 +229,7 @@ export function InventoryMap({
                 <React.Fragment key={areaItem.id}>
                   <Polygon
                     coordinates={areaItem.coordinates}
+                    holes={areaItem.holes}
                     strokeColor="black"
                     fillColor={hexToRgba(areaColor, 0.3)}
                     strokeWidth={2}
@@ -256,7 +270,7 @@ export function InventoryMap({
       />
     </View>
   );
-}
+});
 
 const labelStyles = StyleSheet.create({
   container: {

@@ -50,6 +50,54 @@ export function ItemModal({
   const isViewMode = mode === 'view';
   const isEditMode = mode === 'edit';
 
+  // Helper to format property values (handles nested objects and arrays)
+  const formatValue = (value: any): string => {
+    if (value === null || value === undefined) {
+      return '-';
+    }
+    if (Array.isArray(value)) {
+      return value.map(v => formatValue(v)).join(', ');
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+
+  // Recursively render properties with support for nested objects
+  const renderProperties = (props: Record<string, any>, prefix = '', depth = 0): React.ReactNode[] => {
+    const excludeKeys = ['name', 'Name', 'NAME', 'notes', 'Notes', 'description', 'Description', 'fid'];
+    const result: React.ReactNode[] = [];
+
+    for (const [key, value] of Object.entries(props)) {
+      if (depth === 0 && excludeKeys.includes(key)) {
+        continue;
+      }
+
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        // Nested object - render header and recurse
+        result.push(
+          <Text key={`${fullKey}-header`} style={styles.propertySubheader}>
+            {key}:
+          </Text>
+        );
+        result.push(...renderProperties(value, fullKey, depth + 1));
+      } else {
+        // Primitive or array - render as key-value
+        result.push(
+          <View key={fullKey} style={[styles.propertyRow, depth > 0 && styles.propertyRowIndented]}>
+            <Text style={styles.propertyKey}>{key}:</Text>
+            <Text style={styles.propertyValue}>{formatValue(value)}</Text>
+          </View>
+        );
+      }
+    }
+
+    return result;
+  };
+
   const addHistoryEntry = () => {
     if (!newHistoryTitle.trim()) {
       return;
@@ -216,14 +264,7 @@ export function ItemModal({
             {isViewMode && item.properties && Object.keys(item.properties).length > 0 && (
               <View style={styles.propertiesSection}>
                 <Text style={styles.viewLabel}>Properties</Text>
-                {Object.entries(item.properties)
-                  .filter(([key]) => !['name', 'Name', 'NAME', 'notes', 'Notes', 'description', 'Description', 'fid'].includes(key))
-                  .map(([key, value]) => (
-                    <View key={key} style={styles.propertyRow}>
-                      <Text style={styles.propertyKey}>{key}:</Text>
-                      <Text style={styles.propertyValue}>{String(value ?? '-')}</Text>
-                    </View>
-                  ))}
+                {renderProperties(item.properties)}
               </View>
             )}
 

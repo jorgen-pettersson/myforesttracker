@@ -333,10 +333,30 @@ export function useExportImport() {
     }
   };
 
+  // Flatten nested properties object into dot-notation keys
+  const flattenProperties = (obj: any, prefix = ''): Record<string, any> => {
+    const result: Record<string, any> = {};
+
+    for (const key of Object.keys(obj)) {
+      const value = obj[key];
+      const newKey = prefix ? `${prefix}.${key}` : key;
+
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        // Recursively flatten nested objects
+        Object.assign(result, flattenProperties(value, newKey));
+      } else {
+        result[newKey] = value;
+      }
+    }
+
+    return result;
+  };
+
   // Parse GeoJSON file and return data with available properties
   interface ParsedGeoJSON {
     features: any[];
     propertyKeys: string[];
+    suggestedNameKey?: string;
   }
 
   const parseGeoJSON = async (): Promise<ParsedGeoJSON | null> => {
@@ -365,17 +385,32 @@ export function useExportImport() {
         return null;
       }
 
-      // Collect all unique property keys from all features
+      // Collect all unique property keys from all features (with flattened nested properties)
       const propertyKeysSet = new Set<string>();
       for (const feature of geoJson.features) {
         if (feature.properties) {
-          Object.keys(feature.properties).forEach(key => propertyKeysSet.add(key));
+          const flattened = flattenProperties(feature.properties);
+          Object.keys(flattened).forEach(key => propertyKeysSet.add(key));
         }
+      }
+
+      const propertyKeys = Array.from(propertyKeysSet).sort();
+
+      // Find a suggested name key (prefer placeId or similar)
+      let suggestedNameKey: string | undefined;
+      const placeIdKey = propertyKeys.find(k => k.toLowerCase().endsWith('placeid'));
+      if (placeIdKey) {
+        suggestedNameKey = placeIdKey;
+      } else {
+        // Fall back to 'name' or 'id' if available
+        suggestedNameKey = propertyKeys.find(k => k.toLowerCase() === 'name') ||
+                          propertyKeys.find(k => k.toLowerCase() === 'id');
       }
 
       return {
         features: geoJson.features,
-        propertyKeys: Array.from(propertyKeysSet).sort(),
+        propertyKeys,
+        suggestedNameKey,
       };
     } catch (error: any) {
       if (isErrorWithCode(error) && error.code === errorCodes.OPERATION_CANCELED) {
@@ -385,6 +420,105 @@ export function useExportImport() {
       Alert.alert('Import Error', 'Failed to parse GeoJSON: ' + error.message);
       return null;
     }
+  };
+
+  // Get a value from an object using a dot-notation key
+  const getNestedValue = (obj: any, key: string): any => {
+    if (!key || !obj) {
+      return undefined;
+    }
+    const parts = key.split('.');
+    let value = obj;
+    for (const part of parts) {
+      if (value === null || value === undefined) {
+        return undefined;
+      }
+      value = value[part];
+    }
+    return value;
+  };
+
+  // Convert a GeoJSON ring to Coordinate array
+  const ringToCoordinates = (ring: number[][]): Coordinate[] | null => {
+    if (!ring || ring.length < 3) {
+      return null;
+    }
+
+    let coords = ring.map((coord: number[]) => ({
+      latitude: coord[1],
+      longitude: coord[0],
+    }));
+
+    // Remove the closing point if it's the same as the first
+    if (coords.length > 1) {
+      const first = coords[0];
+      const last = coords[coords.length - 1];
+      if (first.latitude === last.latitude && first.longitude === last.longitude) {
+        coords = coords.slice(0, -1);
+      }
+    }
+
+    if (coords.length < 3) {
+      return null;
+    }
+
+    return coords;
+  };
+
+  // Helper to process a polygon (with potential holes) into an InventoryArea
+  const processPolygon = (
+    rings: number[][][], // Array of rings: [outerRing, hole1, hole2, ...]
+    baseId: string,
+    name: string,
+    notes: string,
+    props: any,
+    now: string,
+    suffix?: string,
+  ): InventoryArea | null => {
+    if (!rings || rings.length === 0) {
+      return null;
+    }
+
+    // First ring is the outer boundary
+    const outerCoords = ringToCoordinates(rings[0]);
+    if (!outerCoords) {
+      return null;
+    }
+
+    // Remaining rings are holes
+    const holes: Coordinate[][] = [];
+    for (let i = 1; i < rings.length; i++) {
+      const holeCoords = ringToCoordinates(rings[i]);
+      if (holeCoords) {
+        holes.push(holeCoords);
+      }
+    }
+
+    const flattened = flattenProperties(props);
+
+    // Get color from properties (support various common property names, including nested)
+    const color = flattened.color || flattened.Color || flattened.COLOR ||
+                  flattened.fill || flattened.Fill || flattened.FILL ||
+                  flattened.fillColor || flattened.FillColor || undefined;
+
+    const id = suffix ? `${baseId}_${suffix}` : baseId;
+    const itemName = suffix ? `${name} (${suffix})` : name;
+
+    return {
+      id,
+      type: 'area',
+      name: itemName,
+      notes,
+      visible: true,
+      created: now,
+      coordinates: outerCoords,
+      holes: holes.length > 0 ? holes : undefined,
+      area: calculateArea(outerCoords),
+      history: [],
+      media: [],
+      properties: props,
+      color,
+    };
   };
 
   // Process parsed GeoJSON with property mappings
@@ -402,18 +536,19 @@ export function useExportImport() {
       }
 
       const props = feature.properties || {};
-      const name = nameProperty ? String(props[nameProperty] || '') : '';
-      const notes = notesProperty ? String(props[notesProperty] || '') : '';
+      // Support dot-notation for nested properties
+      const name = nameProperty ? String(getNestedValue(props, nameProperty) || '') : '';
+      const notes = notesProperty ? String(getNestedValue(props, notesProperty) || '') : '';
 
       // Use fid as unique id if it exists, otherwise generate one
-      const id = props.fid != null
+      const baseId = props.fid != null
         ? String(props.fid)
         : Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
       if (feature.geometry.type === 'Point') {
         const [longitude, latitude] = feature.geometry.coordinates;
         const point: InventoryPoint = {
-          id,
+          id: baseId,
           type: 'point',
           name,
           notes,
@@ -425,58 +560,24 @@ export function useExportImport() {
           properties: props,
         };
         items.push(point);
-      } else if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
-        // GeoJSON polygons have coordinates as [[[lng, lat], ...]]
-        // MultiPolygon has coordinates as [[[[lng, lat], ...]]]
-        // We handle both, taking the first polygon from MultiPolygon
-        let ring: number[][];
-        if (feature.geometry.type === 'MultiPolygon') {
-          // MultiPolygon: take first polygon's outer ring
-          ring = feature.geometry.coordinates[0]?.[0];
-        } else {
-          // Polygon: take outer ring
-          ring = feature.geometry.coordinates[0];
+      } else if (feature.geometry.type === 'Polygon') {
+        // Polygon: all rings (outer + holes)
+        const rings = feature.geometry.coordinates;
+        const areaItem = processPolygon(rings, baseId, name, notes, props, now);
+        if (areaItem) {
+          items.push(areaItem);
         }
-
-        if (!ring || ring.length < 3) {
-          continue;
-        }
-
-        // Remove the closing point if it's the same as the first
-        let coords = ring.map((coord: number[]) => ({
-          latitude: coord[1],
-          longitude: coord[0],
-        }));
-
-        // Check if last point equals first point and remove it
-        if (coords.length > 1) {
-          const first = coords[0];
-          const last = coords[coords.length - 1];
-          if (first.latitude === last.latitude && first.longitude === last.longitude) {
-            coords = coords.slice(0, -1);
+      } else if (feature.geometry.type === 'MultiPolygon') {
+        // MultiPolygon: create separate items for each polygon (with their holes)
+        const polygons = feature.geometry.coordinates;
+        for (let i = 0; i < polygons.length; i++) {
+          const rings = polygons[i]; // All rings of this polygon (outer + holes)
+          const suffix = polygons.length > 1 ? String(i + 1) : undefined;
+          const areaItem = processPolygon(rings, baseId, name, notes, props, now, suffix);
+          if (areaItem) {
+            items.push(areaItem);
           }
         }
-
-        // Get color from properties (support various common property names)
-        const color = props.color || props.Color || props.COLOR ||
-                      props.fill || props.Fill || props.FILL ||
-                      props.fillColor || props.FillColor || undefined;
-
-        const areaItem: InventoryArea = {
-          id,
-          type: 'area',
-          name,
-          notes,
-          visible: true,
-          created: now,
-          coordinates: coords,
-          area: calculateArea(coords),
-          history: [],
-          media: [],
-          properties: props,
-          color,
-        };
-        items.push(areaItem);
       }
     }
 

@@ -206,6 +206,16 @@ export const itemModalStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  propertyRowIndented: {
+    marginLeft: 12,
+  },
+  propertySubheader: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#444',
+    marginTop: 8,
+    marginBottom: 4,
+  },
   propertyKey: {
     fontSize: 13,
     fontWeight: '600',
