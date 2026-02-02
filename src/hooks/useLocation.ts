@@ -1,17 +1,20 @@
-import {useState, useRef, useEffect, useCallback} from 'react';
-import {Platform, PermissionsAndroid} from 'react-native';
-import Geolocation from '@react-native-community/geolocation';
-import {Region, Coordinate} from '../types';
-import {DEFAULT_REGION} from '../constants';
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Platform, PermissionsAndroid } from "react-native";
+import Geolocation from "@react-native-community/geolocation";
+import { Region, Coordinate } from "../types";
+import { DEFAULT_REGION } from "../constants";
 
 interface UseLocationProps {
   gpsTracking: boolean;
   setGpsTracking: (value: boolean) => void;
 }
 
-export function useLocation({gpsTracking, setGpsTracking}: UseLocationProps) {
+export function useLocation({ gpsTracking, setGpsTracking }: UseLocationProps) {
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
-  const [currentLocation, setCurrentLocation] = useState<Coordinate | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<Coordinate | null>(
+    null
+  );
+  const [hasInitialFix, setHasInitialFix] = useState(false);
   const watchId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -24,9 +27,9 @@ export function useLocation({gpsTracking, setGpsTracking}: UseLocationProps) {
   }, []);
 
   const requestLocationPermission = async () => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
       );
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
         getCurrentLocation();
@@ -38,40 +41,56 @@ export function useLocation({gpsTracking, setGpsTracking}: UseLocationProps) {
 
   const getCurrentLocation = () => {
     Geolocation.getCurrentPosition(
-      position => {
-        const {latitude, longitude} = position.coords;
-        setCurrentLocation({latitude, longitude});
-        setRegion({
-          latitude,
-          longitude,
-          latitudeDelta: DEFAULT_REGION.latitudeDelta,
-          longitudeDelta: DEFAULT_REGION.longitudeDelta,
-        });
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setCurrentLocation({ latitude, longitude });
+        if (!hasInitialFix) {
+          setRegion({
+            latitude,
+            longitude,
+            latitudeDelta: DEFAULT_REGION.latitudeDelta,
+            longitudeDelta: DEFAULT_REGION.longitudeDelta,
+          });
+          setHasInitialFix(true);
+        } else if (gpsTracking) {
+          setRegion({
+            latitude,
+            longitude,
+            latitudeDelta: DEFAULT_REGION.latitudeDelta,
+            longitudeDelta: DEFAULT_REGION.longitudeDelta,
+          });
+        }
       },
-      error => {
+      (error) => {
         console.log(error);
       },
-      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   };
 
   // Start/stop GPS watch based on gpsTracking state
   useEffect(() => {
     if (gpsTracking) {
+      if (watchId.current !== null) {
+        Geolocation.clearWatch(watchId.current);
+        watchId.current = null;
+      }
       watchId.current = Geolocation.watchPosition(
-        position => {
-          const {latitude, longitude} = position.coords;
-          setCurrentLocation({latitude, longitude});
-          setRegion(prev => ({
-            ...prev,
-            latitude,
-            longitude,
-          }));
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setCurrentLocation({ latitude, longitude });
+          if (gpsTracking) {
+            setRegion((prev) => ({
+              ...prev,
+              latitude,
+              longitude,
+            }));
+          }
         },
-        error => {
+        (error) => {
           console.log(error);
         },
-        {enableHighAccuracy: true, distanceFilter: 10},
+        { enableHighAccuracy: true, distanceFilter: 10 }
       );
     } else {
       if (watchId.current !== null) {

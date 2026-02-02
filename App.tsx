@@ -1,8 +1,20 @@
-import React, {useState, useRef} from 'react';
-import {View, Alert, StyleSheet, PanResponder, Dimensions, ActivityIndicator} from 'react-native';
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Alert,
+  StyleSheet,
+  PanResponder,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
 
-import {InventoryItem, Coordinate, DrawingMode, Region} from './src/types';
-import {useLocation, useInventory, useExportImport, useSettings} from './src/hooks';
+import { InventoryItem, Coordinate, DrawingMode, Region } from "./src/types";
+import {
+  useLocation,
+  useInventory,
+  useExportImport,
+  useSettings,
+} from "./src/hooks";
 import {
   Header,
   ToolPanel,
@@ -12,30 +24,50 @@ import {
   InventoryMap,
   AboutModal,
   PropertyMappingModal,
-} from './src/components';
-import type {InventoryMapRef} from './src/components/Map/InventoryMap';
-import {LocalizationProvider, useLocalization, Language} from './src/localization';
+} from "./src/components";
+import type { InventoryMapRef } from "./src/components/Map/InventoryMap";
+import {
+  LocalizationProvider,
+  useLocalization,
+  Language,
+} from "./src/localization";
 
-type ModalMode = 'view' | 'edit' | 'create';
+type ModalMode = "view" | "edit" | "create";
 
 const SWIPE_EDGE_WIDTH = 30;
 const SWIPE_THRESHOLD = 50;
 
 function AppContent() {
-  const {gpsTracking, setGpsTracking, mapType, toggleMapType, isLoaded} = useSettings();
-  const {region, setRegion, toggleGPSTracking} = useLocation({gpsTracking, setGpsTracking});
-  const {language, setLanguage} = useLocalization();
-  const {items, addItem, updateItem, deleteItem, toggleItemVisibility, calculateArea, importItems, appendItems} = useInventory();
-  const {exportData, importData, parseGeoJSON, processGeoJSON} = useExportImport();
+  const { gpsTracking, setGpsTracking, mapType, toggleMapType, isLoaded } =
+    useSettings();
+  const { region, setRegion, toggleGPSTracking } = useLocation({
+    gpsTracking,
+    setGpsTracking,
+  });
+  const { language, setLanguage } = useLocalization();
+  const {
+    items,
+    addItem,
+    updateItem,
+    deleteItem,
+    toggleItemVisibility,
+    calculateArea,
+    importItems,
+    appendItems,
+  } = useInventory();
+  const { exportData, importData, parseGeoJSON, processGeoJSON } =
+    useExportImport();
   const mapRef = useRef<InventoryMapRef>(null);
 
   const [menuVisible, setMenuVisible] = useState(false);
-  const [drawingMode, setDrawingMode] = useState<DrawingMode>('none');
+  const [drawingMode, setDrawingMode] = useState<DrawingMode>("none");
   const [areaPoints, setAreaPoints] = useState<Coordinate[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentItem, setCurrentItem] = useState<Partial<InventoryItem>>({});
-  const [modalMode, setModalMode] = useState<ModalMode>('create');
-  const [repositionItem, setRepositionItem] = useState<InventoryItem | null>(null);
+  const [modalMode, setModalMode] = useState<ModalMode>("create");
+  const [repositionItem, setRepositionItem] = useState<InventoryItem | null>(
+    null
+  );
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -44,9 +76,11 @@ function AppContent() {
   const [propertyMappingVisible, setPropertyMappingVisible] = useState(false);
   const [geoJsonFeatures, setGeoJsonFeatures] = useState<any[]>([]);
   const [geoJsonProperties, setGeoJsonProperties] = useState<string[]>([]);
-  const [geoJsonSuggestedName, setGeoJsonSuggestedName] = useState<string | undefined>();
+  const [geoJsonSuggestedName, setGeoJsonSuggestedName] = useState<
+    string | undefined
+  >();
 
-  const screenWidth = Dimensions.get('window').width;
+  const screenWidth = Dimensions.get("window").width;
 
   const leftPanResponder = useRef(
     PanResponder.create({
@@ -65,7 +99,7 @@ function AppContent() {
           setMenuVisible(true);
         }
       },
-    }),
+    })
   ).current;
 
   const rightPanResponder = useRef(
@@ -75,7 +109,8 @@ function AppContent() {
       },
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         return (
-          evt.nativeEvent.pageX > screenWidth - SWIPE_EDGE_WIDTH + gestureState.dx &&
+          evt.nativeEvent.pageX >
+            screenWidth - SWIPE_EDGE_WIDTH + gestureState.dx &&
           gestureState.dx < -10 &&
           Math.abs(gestureState.dy) < Math.abs(gestureState.dx)
         );
@@ -85,7 +120,7 @@ function AppContent() {
           setSidebarVisible(true);
         }
       },
-    }),
+    })
   ).current;
 
   const confirmLocation = () => {
@@ -94,11 +129,11 @@ function AppContent() {
       longitude: region.longitude,
     };
 
-    if (drawingMode === 'reposition' && repositionItem) {
-      if (repositionItem.type === 'point') {
-        updateItem({...repositionItem, coordinate});
+    if (drawingMode === "reposition" && repositionItem) {
+      if (repositionItem.type === "point") {
+        updateItem({ ...repositionItem, coordinate });
         setRepositionItem(null);
-        setDrawingMode('none');
+        setDrawingMode("none");
       } else {
         // For area, add point to new coordinates
         setAreaPoints([...areaPoints, coordinate]);
@@ -106,56 +141,60 @@ function AppContent() {
       return;
     }
 
-    if (drawingMode === 'point') {
+    if (drawingMode === "point") {
       setCurrentItem({
         id: Date.now().toString(),
-        type: 'point',
+        type: "point",
         coordinate,
-        name: '',
-        notes: '',
+        name: "",
+        notes: "",
         visible: true,
         created: new Date().toISOString(),
         history: [],
         media: [],
       });
       setModalVisible(true);
-      setDrawingMode('none');
-    } else if (drawingMode === 'area') {
+      setDrawingMode("none");
+    } else if (drawingMode === "area") {
       setAreaPoints([...areaPoints, coordinate]);
     }
   };
 
+  const handleToggleGPS = () => {
+    toggleGPSTracking();
+  };
+
   const completeArea = () => {
     if (areaPoints.length < 3) {
-      Alert.alert('Error', 'An area needs at least 3 points');
+      Alert.alert("Error", "An area needs at least 3 points");
       return;
     }
 
     const area = calculateArea(areaPoints);
     setCurrentItem({
       id: Date.now().toString(),
-      type: 'area',
+      type: "area",
       coordinates: areaPoints,
-      name: '',
-      notes: '',
+      name: "",
+      notes: "",
       area,
       visible: true,
       created: new Date().toISOString(),
       history: [],
       media: [],
-      color: '#00FF00', // Default green
+      color: "#00FF00", // Default green
     });
     setModalVisible(true);
-    setDrawingMode('none');
+    setDrawingMode("none");
   };
 
   const saveItem = () => {
     if (!currentItem.name) {
-      Alert.alert('Error', 'Please enter a name');
+      Alert.alert("Error", "Please enter a name");
       return;
     }
 
-    if (modalMode === 'edit') {
+    if (modalMode === "edit") {
       updateItem(currentItem as InventoryItem);
     } else {
       addItem(currentItem as InventoryItem);
@@ -163,145 +202,111 @@ function AppContent() {
     setModalVisible(false);
     setCurrentItem({});
     setAreaPoints([]);
-    setModalMode('create');
+    setModalMode("create");
   };
 
   const cancelModal = () => {
     setModalVisible(false);
     setCurrentItem({});
     setAreaPoints([]);
-    setModalMode('create');
+    setModalMode("create");
   };
 
   const handleView = (item: InventoryItem) => {
     // Close sidebar first
     setSidebarVisible(false);
-
-    // Zoom to the item's location
-    let targetRegion: Region | null = null;
-
-    if (item.type === 'point') {
-      targetRegion = {
-        latitude: item.coordinate.latitude,
-        longitude: item.coordinate.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      };
-    } else if (item.type === 'area' && item.coordinates.length > 0) {
-      // Calculate bounding box for the area
-      const lats = item.coordinates.map(c => c.latitude);
-      const lngs = item.coordinates.map(c => c.longitude);
-      const minLat = Math.min(...lats);
-      const maxLat = Math.max(...lats);
-      const minLng = Math.min(...lngs);
-      const maxLng = Math.max(...lngs);
-
-      // Add padding around the area
-      const latPadding = (maxLat - minLat) * 0.3 || 0.005;
-      const lngPadding = (maxLng - minLng) * 0.3 || 0.005;
-
-      targetRegion = {
-        latitude: (minLat + maxLat) / 2,
-        longitude: (minLng + maxLng) / 2,
-        latitudeDelta: (maxLat - minLat) + latPadding,
-        longitudeDelta: (maxLng - minLng) + lngPadding,
-      };
-    }
-
-    // Animate map after sidebar closes, then open modal
-    setTimeout(() => {
-      if (targetRegion) {
-        mapRef.current?.animateToRegion(targetRegion, 300);
-      }
-      // Open modal after animation starts
-      setTimeout(() => {
-        setCurrentItem(item);
-        setModalMode('view');
-        setModalVisible(true);
-      }, 350);
-    }, 100);
+    setCurrentItem(item);
+    setModalMode("view");
+    setModalVisible(true);
   };
 
   const handleSwitchToEdit = () => {
-    setModalMode('edit');
+    setModalMode("edit");
+  };
+
+  const handleRegionChange = (nextRegion: Region) => {
+    setRegion(nextRegion);
   };
 
   const handleReposition = (item: InventoryItem) => {
     setRepositionItem(item);
-    setDrawingMode('reposition');
+    setDrawingMode("reposition");
     setSidebarVisible(false);
-    if (item.type === 'area') {
+    if (item.type === "area") {
       setAreaPoints([]);
     }
   };
 
   const completeReposition = () => {
-    if (repositionItem && repositionItem.type === 'area') {
+    if (repositionItem && repositionItem.type === "area") {
       if (areaPoints.length < 3) {
-        Alert.alert('Error', 'An area needs at least 3 points');
+        Alert.alert("Error", "An area needs at least 3 points");
         return;
       }
       const area = calculateArea(areaPoints);
-      updateItem({...repositionItem, coordinates: areaPoints, area});
+      updateItem({ ...repositionItem, coordinates: areaPoints, area });
     }
     setRepositionItem(null);
-    setDrawingMode('none');
+    setDrawingMode("none");
     setAreaPoints([]);
   };
 
   const cancelReposition = () => {
     setRepositionItem(null);
-    setDrawingMode('none');
+    setDrawingMode("none");
     setAreaPoints([]);
   };
 
   const clearDrawing = () => {
     setAreaPoints([]);
-    setDrawingMode('none');
+    setDrawingMode("none");
   };
 
-  const handleExport = async (format: 'json' | 'csv' | 'geojson' | 'all') => {
+  const handleExport = async (format: "json" | "csv" | "geojson" | "all") => {
     await exportData(items, format);
   };
 
   const handleImport = async () => {
-    Alert.alert(
-      'Import Data',
-      'Choose import format',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'GeoJSON (Add)',
-          onPress: async () => {
-            const parsed = await parseGeoJSON();
-            if (parsed) {
-              setGeoJsonFeatures(parsed.features);
-              setGeoJsonProperties(parsed.propertyKeys);
-              setGeoJsonSuggestedName(parsed.suggestedNameKey);
-              setPropertyMappingVisible(true);
-            }
-          },
+    Alert.alert("Import Data", "Choose import format", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "GeoJSON (Add)",
+        onPress: async () => {
+          const parsed = await parseGeoJSON();
+          if (parsed) {
+            setGeoJsonFeatures(parsed.features);
+            setGeoJsonProperties(parsed.propertyKeys);
+            setGeoJsonSuggestedName(parsed.suggestedNameKey);
+            setPropertyMappingVisible(true);
+          }
         },
-        {
-          text: 'ZIP (Replace All)',
-          style: 'destructive',
-          onPress: async () => {
-            const importedItems = await importData();
-            if (importedItems) {
-              importItems(importedItems);
-              Alert.alert('Success', `Imported ${importedItems.length} items`);
-            }
-          },
+      },
+      {
+        text: "ZIP (Replace All)",
+        style: "destructive",
+        onPress: async () => {
+          const importedItems = await importData();
+          if (importedItems) {
+            importItems(importedItems);
+            Alert.alert("Success", `Imported ${importedItems.length} items`);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
-  const handlePropertyMappingConfirm = (nameProperty: string, notesProperty: string) => {
-    const importedItems = processGeoJSON(geoJsonFeatures, nameProperty, notesProperty);
+  const handlePropertyMappingConfirm = (
+    nameProperty: string,
+    notesProperty: string
+  ) => {
+    const importedItems = processGeoJSON(
+      geoJsonFeatures,
+      nameProperty,
+      notesProperty
+    );
     if (importedItems) {
       appendItems(importedItems);
-      Alert.alert('Success', `Imported ${importedItems.length} items`);
+      Alert.alert("Success", `Imported ${importedItems.length} items`);
     }
     setPropertyMappingVisible(false);
     setGeoJsonFeatures([]);
@@ -331,7 +336,7 @@ function AppContent() {
       <InventoryMap
         ref={mapRef}
         region={region}
-        onRegionChange={setRegion}
+        onRegionChange={handleRegionChange}
         mapType={mapType}
         items={items}
         areaPoints={areaPoints}
@@ -349,7 +354,7 @@ function AppContent() {
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         gpsTracking={gpsTracking}
-        onToggleGPS={toggleGPSTracking}
+        onToggleGPS={handleToggleGPS}
         mapType={mapType}
         onToggleMapType={toggleMapType}
         drawingMode={drawingMode}
@@ -420,19 +425,19 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
   },
   leftSwipeZone: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
     width: SWIPE_EDGE_WIDTH,
   },
   rightSwipeZone: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 0,
     bottom: 0,

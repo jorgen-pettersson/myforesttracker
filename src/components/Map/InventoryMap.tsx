@@ -1,20 +1,30 @@
-import React, {useRef, useImperativeHandle, forwardRef} from 'react';
-import {View, Text, StyleSheet} from 'react-native';
-import MapView, {Marker, Polygon, PROVIDER_GOOGLE} from 'react-native-maps';
-import {InventoryItem, InventoryArea, Region, Coordinate, DrawingMode} from '../../types';
-import {mapStyles as styles} from '../../styles';
-import {Crosshair} from '../Crosshair';
+import React, { useRef, useImperativeHandle, forwardRef } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from "react-native-maps";
+import {
+  InventoryItem,
+  InventoryArea,
+  Region,
+  Coordinate,
+  DrawingMode,
+} from "../../types";
+import { mapStyles as styles } from "../../styles";
+import { Crosshair } from "../Crosshair";
 
-const DEFAULT_AREA_COLOR = '#00FF00'; // Green
+const DEFAULT_AREA_COLOR = "#00FF00"; // Green
 
 // Check if a point is inside a polygon using ray casting
 const pointInPolygon = (point: Coordinate, polygon: Coordinate[]): boolean => {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i].longitude, yi = polygon[i].latitude;
-    const xj = polygon[j].longitude, yj = polygon[j].latitude;
-    if (((yi > point.latitude) !== (yj > point.latitude)) &&
-        (point.longitude < (xj - xi) * (point.latitude - yi) / (yj - yi) + xi)) {
+    const xi = polygon[i].longitude,
+      yi = polygon[i].latitude;
+    const xj = polygon[j].longitude,
+      yj = polygon[j].latitude;
+    if (
+      yi > point.latitude !== yj > point.latitude &&
+      point.longitude < ((xj - xi) * (point.latitude - yi)) / (yj - yi) + xi
+    ) {
       inside = !inside;
     }
   }
@@ -23,22 +33,27 @@ const pointInPolygon = (point: Coordinate, polygon: Coordinate[]): boolean => {
 
 // Get bounding box of polygon
 const getBounds = (coords: Coordinate[]) => {
-  let minLat = Infinity, maxLat = -Infinity;
-  let minLng = Infinity, maxLng = -Infinity;
+  let minLat = Infinity,
+    maxLat = -Infinity;
+  let minLng = Infinity,
+    maxLng = -Infinity;
   for (const c of coords) {
     minLat = Math.min(minLat, c.latitude);
     maxLat = Math.max(maxLat, c.latitude);
     minLng = Math.min(minLng, c.longitude);
     maxLng = Math.max(maxLng, c.longitude);
   }
-  return {minLat, maxLat, minLng, maxLng};
+  return { minLat, maxLat, minLng, maxLng };
 };
 
 // Calculate distance from point to line segment
 const distToSegment = (p: Coordinate, v: Coordinate, w: Coordinate): number => {
-  const px = p.longitude, py = p.latitude;
-  const vx = v.longitude, vy = v.latitude;
-  const wx = w.longitude, wy = w.latitude;
+  const px = p.longitude,
+    py = p.latitude;
+  const vx = v.longitude,
+    vy = v.latitude;
+  const wx = w.longitude,
+    wy = w.latitude;
 
   const l2 = (vx - wx) * (vx - wx) + (vy - wy) * (vy - wy);
   if (l2 === 0) return Math.sqrt((px - vx) * (px - vx) + (py - vy) * (py - vy));
@@ -53,7 +68,10 @@ const distToSegment = (p: Coordinate, v: Coordinate, w: Coordinate): number => {
 };
 
 // Calculate minimum distance from point to polygon edges
-const distToPolygonEdge = (point: Coordinate, polygon: Coordinate[]): number => {
+const distToPolygonEdge = (
+  point: Coordinate,
+  polygon: Coordinate[]
+): number => {
   let minDist = Infinity;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
     const dist = distToSegment(point, polygon[j], polygon[i]);
@@ -78,9 +96,17 @@ const getVisualCenter = (coords: Coordinate[]): Coordinate => {
   let bestDist = -1;
 
   // First pass: coarse grid
-  for (let lat = bounds.minLat + latStep / 2; lat < bounds.maxLat; lat += latStep) {
-    for (let lng = bounds.minLng + lngStep / 2; lng < bounds.maxLng; lng += lngStep) {
-      const point = {latitude: lat, longitude: lng};
+  for (
+    let lat = bounds.minLat + latStep / 2;
+    lat < bounds.maxLat;
+    lat += latStep
+  ) {
+    for (
+      let lng = bounds.minLng + lngStep / 2;
+      lng < bounds.maxLng;
+      lng += lngStep
+    ) {
+      const point = { latitude: lat, longitude: lng };
       if (pointInPolygon(point, coords)) {
         const dist = distToPolygonEdge(point, coords);
         if (dist > bestDist) {
@@ -96,9 +122,17 @@ const getVisualCenter = (coords: Coordinate[]): Coordinate => {
     const refineLat = latStep;
     const refineLng = lngStep;
     const refineStep = 5;
-    for (let lat = bestPoint.latitude - refineLat; lat <= bestPoint.latitude + refineLat; lat += refineLat / refineStep) {
-      for (let lng = bestPoint.longitude - refineLng; lng <= bestPoint.longitude + refineLng; lng += refineLng / refineStep) {
-        const point = {latitude: lat, longitude: lng};
+    for (
+      let lat = bestPoint.latitude - refineLat;
+      lat <= bestPoint.latitude + refineLat;
+      lat += refineLat / refineStep
+    ) {
+      for (
+        let lng = bestPoint.longitude - refineLng;
+        lng <= bestPoint.longitude + refineLng;
+        lng += refineLng / refineStep
+      ) {
+        const point = { latitude: lat, longitude: lng };
         if (pointInPolygon(point, coords)) {
           const dist = distToPolygonEdge(point, coords);
           if (dist > bestDist) {
@@ -115,7 +149,7 @@ const getVisualCenter = (coords: Coordinate[]): Coordinate => {
 
 // Format area in hectares
 const formatAreaHa = (areaSqm: number | undefined): string => {
-  if (!areaSqm) return '';
+  if (!areaSqm) return "";
   const ha = areaSqm / 10000;
   if (ha >= 1) {
     return `${ha.toFixed(2)} ha`;
@@ -126,21 +160,21 @@ const formatAreaHa = (areaSqm: number | undefined): string => {
 // Convert hex color to rgba with opacity
 const hexToRgba = (hex: string, opacity: number): string => {
   // Handle color names by returning a default rgba
-  if (!hex.startsWith('#')) {
+  if (!hex.startsWith("#")) {
     // Common color names mapping
     const colorMap: Record<string, string> = {
-      red: '#FF0000',
-      green: '#00FF00',
-      blue: '#0000FF',
-      yellow: '#FFFF00',
-      orange: '#FFA500',
-      purple: '#800080',
-      pink: '#FFC0CB',
-      brown: '#A52A2A',
-      black: '#000000',
-      white: '#FFFFFF',
-      gray: '#808080',
-      grey: '#808080',
+      red: "#FF0000",
+      green: "#00FF00",
+      blue: "#0000FF",
+      yellow: "#FFFF00",
+      orange: "#FFA500",
+      purple: "#800080",
+      pink: "#FFC0CB",
+      brown: "#A52A2A",
+      black: "#000000",
+      white: "#FFFFFF",
+      gray: "#808080",
+      grey: "#808080",
     };
     hex = colorMap[hex.toLowerCase()] || DEFAULT_AREA_COLOR;
   }
@@ -155,7 +189,7 @@ const hexToRgba = (hex: string, opacity: number): string => {
   return `rgba(0,255,0,${opacity})`; // Fallback to green
 };
 
-type MapType = 'standard' | 'satellite' | 'hybrid';
+type MapType = "standard" | "satellite" | "hybrid";
 
 interface InventoryMapProps {
   region: Region;
@@ -164,7 +198,7 @@ interface InventoryMapProps {
   items: InventoryItem[];
   areaPoints: Coordinate[];
   drawingMode: DrawingMode;
-  repositionType?: 'point' | 'area';
+  repositionType?: "point" | "area";
   onConfirmLocation: () => void;
   onCompleteReposition?: () => void;
   onCancelReposition?: () => void;
@@ -175,121 +209,132 @@ export interface InventoryMapRef {
   animateToRegion: (region: Region, duration?: number) => void;
 }
 
-export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(({
-  region,
-  onRegionChange,
-  mapType,
-  items,
-  areaPoints,
-  drawingMode,
-  repositionType,
-  onConfirmLocation,
-  onCompleteReposition,
-  onCancelReposition,
-  onItemPress,
-}, ref) => {
-  const mapRef = useRef<MapView>(null);
-
-  useImperativeHandle(ref, () => ({
-    animateToRegion: (targetRegion: Region, duration = 500) => {
-      mapRef.current?.animateToRegion(targetRegion, duration);
+export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
+  (
+    {
+      region,
+      onRegionChange,
+      mapType,
+      items,
+      areaPoints,
+      drawingMode,
+      repositionType,
+      onConfirmLocation,
+      onCompleteReposition,
+      onCancelReposition,
+      onItemPress,
     },
-  }));
+    ref
+  ) => {
+    const mapRef = useRef<MapView>(null);
 
-  return (
-    <View style={styles.mapContainer}>
-      <MapView
-        ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-        style={styles.map}
-        region={region}
-        mapType={mapType}
-        onRegionChangeComplete={onRegionChange}
-        showsUserLocation
-        showsMyLocationButton>
-        {items
-          .filter(item => item.visible !== false)
-          .map(item => {
-            if (item.type === 'point') {
-              return (
-                <Marker
-                  key={item.id}
-                  coordinate={item.coordinate}
-                  title={item.name}
-                  description={item.notes}
-                  pinColor="green"
-                  onCalloutPress={() => onItemPress?.(item)}
-                />
-              );
-            } else {
-              const areaItem = item as InventoryArea;
-              const areaColor = areaItem.color || DEFAULT_AREA_COLOR;
-              const labelPosition = getVisualCenter(areaItem.coordinates);
-              return (
-                <React.Fragment key={areaItem.id}>
-                  <Polygon
-                    coordinates={areaItem.coordinates}
-                    holes={areaItem.holes}
-                    strokeColor="black"
-                    fillColor={hexToRgba(areaColor, 0.3)}
-                    strokeWidth={2}
-                    tappable
-                    onPress={() => onItemPress?.(areaItem)}
-                  />
+    useImperativeHandle(ref, () => ({
+      animateToRegion: (targetRegion: Region, duration = 500) => {
+        mapRef.current?.animateToRegion(targetRegion, duration);
+      },
+    }));
+
+    return (
+      <View style={styles.mapContainer}>
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_GOOGLE}
+          style={styles.map}
+          initialRegion={region}
+          mapType={mapType}
+          onRegionChangeComplete={onRegionChange}
+          showsUserLocation
+          showsMyLocationButton
+        >
+          {items
+            .filter((item) => item.visible !== false)
+            .map((item) => {
+              if (item.type === "point") {
+                return (
                   <Marker
-                    coordinate={labelPosition}
-                    anchor={{x: 0.5, y: 0.5}}
-                    onPress={() => onItemPress?.(areaItem)}>
-                    <View style={labelStyles.container}>
-                      <Text style={labelStyles.name} numberOfLines={1}>{areaItem.name}</Text>
-                      <Text style={labelStyles.area}>{formatAreaHa(areaItem.area)}</Text>
-                    </View>
-                  </Marker>
-                </React.Fragment>
-              );
-            }
-          })}
+                    key={item.id}
+                    coordinate={item.coordinate}
+                    title={item.name}
+                    description={item.notes}
+                    pinColor="green"
+                    onCalloutPress={() => onItemPress?.(item)}
+                  />
+                );
+              } else {
+                const areaItem = item as InventoryArea;
+                const areaColor = areaItem.color || DEFAULT_AREA_COLOR;
+                const labelPosition = getVisualCenter(areaItem.coordinates);
+                return (
+                  <React.Fragment key={areaItem.id}>
+                    <Polygon
+                      coordinates={areaItem.coordinates}
+                      holes={areaItem.holes}
+                      strokeColor="black"
+                      fillColor={hexToRgba(areaColor, 0.3)}
+                      strokeWidth={2}
+                      tappable
+                      onPress={() => onItemPress?.(areaItem)}
+                    />
+                    <Marker
+                      coordinate={labelPosition}
+                      anchor={{ x: 0.5, y: 0.5 }}
+                      onPress={() => onItemPress?.(areaItem)}
+                    >
+                      <View style={labelStyles.container}>
+                        <Text style={labelStyles.name} numberOfLines={1}>
+                          {areaItem.name}
+                        </Text>
+                        <Text style={labelStyles.area}>
+                          {formatAreaHa(areaItem.area)}
+                        </Text>
+                      </View>
+                    </Marker>
+                  </React.Fragment>
+                );
+              }
+            })}
 
-        {areaPoints.length > 0 && (
-          <Polygon
-            coordinates={areaPoints}
-            strokeColor="blue"
-            fillColor="rgba(0,0,255,0.2)"
-            strokeWidth={2}
-          />
-        )}
-      </MapView>
+          {areaPoints.length > 0 && (
+            <Polygon
+              coordinates={areaPoints}
+              strokeColor="blue"
+              fillColor="rgba(0,0,255,0.2)"
+              strokeWidth={2}
+            />
+          )}
+        </MapView>
 
-      <Crosshair
-        drawingMode={drawingMode}
-        areaPointsCount={areaPoints.length}
-        repositionType={repositionType}
-        onConfirm={onConfirmLocation}
-        onCompleteReposition={onCompleteReposition}
-        onCancelReposition={onCancelReposition}
-      />
-    </View>
-  );
-});
+        <Crosshair
+          drawingMode={drawingMode}
+          areaPointsCount={areaPoints.length}
+          repositionType={repositionType}
+          onConfirm={onConfirmLocation}
+          onCompleteReposition={onCompleteReposition}
+          onCancelReposition={onCancelReposition}
+        />
+      </View>
+    );
+  }
+);
 
 const labelStyles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#333',
-    alignItems: 'center',
+    borderColor: "#333",
+    alignItems: "center",
     maxWidth: 120,
   },
   name: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   area: {
     fontSize: 11,
-    color: '#666',
+    color: "#666",
   },
 });
