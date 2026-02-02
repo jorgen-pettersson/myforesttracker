@@ -215,6 +215,26 @@ function AppContent() {
   const handleView = (item: InventoryItem) => {
     // Close sidebar first
     setSidebarVisible(false);
+    const currentRegion = region;
+    if (item.type === "point") {
+      const targetRegion: Region = {
+        latitude: item.coordinate.latitude,
+        longitude: item.coordinate.longitude,
+        latitudeDelta: currentRegion.latitudeDelta,
+        longitudeDelta: currentRegion.longitudeDelta,
+      };
+      mapRef.current?.animateToRegion(targetRegion, 300);
+    } else if (item.type === "area" && item.coordinates.length > 0) {
+      const { width, height } = Dimensions.get("window");
+      const edgePadding = {
+        top: height * 0.1,
+        right: width * 0.1,
+        bottom: height * 0.1,
+        left: width * 0.1,
+      };
+      mapRef.current?.fitToCoordinates(item.coordinates, edgePadding, true);
+    }
+
     setCurrentItem(item);
     setModalMode("view");
     setModalVisible(true);

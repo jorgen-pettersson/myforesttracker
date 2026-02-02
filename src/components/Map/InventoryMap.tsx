@@ -81,7 +81,7 @@ const distToPolygonEdge = (
 };
 
 // Find visual center - point inside polygon farthest from edges
-const getVisualCenter = (coords: Coordinate[]): Coordinate => {
+export const getVisualCenter = (coords: Coordinate[]): Coordinate => {
   const bounds = getBounds(coords);
 
   // Sample grid to find point with maximum distance from edges
@@ -207,6 +207,11 @@ interface InventoryMapProps {
 
 export interface InventoryMapRef {
   animateToRegion: (region: Region, duration?: number) => void;
+  fitToCoordinates: (
+    coordinates: Coordinate[],
+    edgePadding: { top: number; right: number; bottom: number; left: number },
+    animated?: boolean
+  ) => void;
 }
 
 export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
@@ -231,6 +236,21 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
     useImperativeHandle(ref, () => ({
       animateToRegion: (targetRegion: Region, duration = 500) => {
         mapRef.current?.animateToRegion(targetRegion, duration);
+      },
+      fitToCoordinates: (
+        coordinates: Coordinate[],
+        edgePadding: {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        },
+        animated = true
+      ) => {
+        mapRef.current?.fitToCoordinates(coordinates, {
+          edgePadding,
+          animated,
+        });
       },
     }));
 
