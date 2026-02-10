@@ -1,9 +1,23 @@
-import {Alert} from 'react-native';
-import RNFS from 'react-native-fs';
-import {zip, unzip} from 'react-native-zip-archive';
-import Share from 'react-native-share';
-import {pick, types, isErrorWithCode, errorCodes} from '@react-native-documents/picker';
-import {InventoryItem, InventoryPoint, InventoryArea, MediaItem, HistoryEntry, Coordinate} from '../types';
+import { Alert } from "react-native";
+import RNFS from "react-native-fs";
+import { zip, unzip } from "react-native-zip-archive";
+import Share from "react-native-share";
+import {
+  pick,
+  types,
+  isErrorWithCode,
+  errorCodes,
+} from "@react-native-documents/picker";
+import {
+  InventoryItem,
+  InventoryPoint,
+  InventoryArea,
+  MediaItem,
+  HistoryEntry,
+  Coordinate,
+} from "../types";
+import { FORESTAND_IMPORT_URL } from "../constants";
+import { useLocalization } from "../localization";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
 const IMPORT_DIR = `${RNFS.CachesDirectoryPath}/import`;
@@ -21,6 +35,7 @@ const calculateArea = (coords: Coordinate[]): number => {
 };
 
 export function useExportImport() {
+  const { t } = useLocalization();
   const ensureDir = async (dir: string) => {
     const exists = await RNFS.exists(dir);
     if (!exists) {
@@ -38,7 +53,7 @@ export function useExportImport() {
 
   // Convert items to GeoJSON format
   const itemsToGeoJSON = (items: InventoryItem[]): object => {
-    const features = items.map(item => {
+    const features = items.map((item) => {
       // Merge original properties with our properties
       const baseProps = {
         fid: item.id,
@@ -52,29 +67,32 @@ export function useExportImport() {
 
       // Include original imported properties, but let our values override
       const mergedProps = item.properties
-        ? {...item.properties, ...baseProps}
+        ? { ...item.properties, ...baseProps }
         : baseProps;
 
-      if (item.type === 'point') {
+      if (item.type === "point") {
         return {
-          type: 'Feature',
+          type: "Feature",
           geometry: {
-            type: 'Point',
+            type: "Point",
             coordinates: [item.coordinate.longitude, item.coordinate.latitude],
           },
           properties: mergedProps,
         };
       } else {
         // Area - Polygon
-        const coordinates = item.coordinates.map(c => [c.longitude, c.latitude]);
+        const coordinates = item.coordinates.map((c) => [
+          c.longitude,
+          c.latitude,
+        ]);
         // Close the polygon by adding the first point at the end
         if (coordinates.length > 0) {
           coordinates.push(coordinates[0]);
         }
         return {
-          type: 'Feature',
+          type: "Feature",
           geometry: {
-            type: 'Polygon',
+            type: "Polygon",
             coordinates: [coordinates],
           },
           properties: {
@@ -87,7 +105,7 @@ export function useExportImport() {
     });
 
     return {
-      type: 'FeatureCollection',
+      type: "FeatureCollection",
       features,
     };
   };
@@ -95,29 +113,35 @@ export function useExportImport() {
   // Convert items to CSV format
   const itemsToCSV = (items: InventoryItem[]): string => {
     const headers = [
-      'id',
-      'type',
-      'name',
-      'notes',
-      'visible',
-      'created',
-      'latitude',
-      'longitude',
-      'area_sqm',
-      'media_count',
-      'history_count',
+      "id",
+      "type",
+      "name",
+      "notes",
+      "visible",
+      "created",
+      "latitude",
+      "longitude",
+      "area_sqm",
+      "media_count",
+      "history_count",
     ];
 
-    const rows = items.map(item => {
-      const lat = item.type === 'point' ? item.coordinate.latitude : item.coordinates[0]?.latitude || '';
-      const lng = item.type === 'point' ? item.coordinate.longitude : item.coordinates[0]?.longitude || '';
-      const area = item.type === 'area' ? item.area?.toFixed(2) || '' : '';
+    const rows = items.map((item) => {
+      const lat =
+        item.type === "point"
+          ? item.coordinate.latitude
+          : item.coordinates[0]?.latitude || "";
+      const lng =
+        item.type === "point"
+          ? item.coordinate.longitude
+          : item.coordinates[0]?.longitude || "";
+      const area = item.type === "area" ? item.area?.toFixed(2) || "" : "";
 
       return [
         item.id,
         item.type,
-        `"${(item.name || '').replace(/"/g, '""')}"`,
-        `"${(item.notes || '').replace(/"/g, '""')}"`,
+        `"${(item.name || "").replace(/"/g, '""')}"`,
+        `"${(item.notes || "").replace(/"/g, '""')}"`,
         item.visible,
         item.created,
         lat,
@@ -125,10 +149,10 @@ export function useExportImport() {
         area,
         item.media?.length || 0,
         item.history?.length || 0,
-      ].join(',');
+      ].join(",");
     });
 
-    return [headers.join(','), ...rows].join('\n');
+    return [headers.join(","), ...rows].join("\n");
   };
 
   // Collect all media files from items
@@ -153,26 +177,29 @@ export function useExportImport() {
 
   // Update media URIs to relative paths for export
   const prepareItemsForExport = (items: InventoryItem[]): InventoryItem[] => {
-    return items.map(item => ({
+    return items.map((item) => ({
       ...item,
-      media: item.media?.map(m => ({
-        ...m,
-        uri: `media/${m.id}.${m.type === 'video' ? 'mp4' : 'jpg'}`,
-      })) || [],
-      history: item.history?.map(h => ({
-        ...h,
-        media: h.media?.map(m => ({
+      media:
+        item.media?.map((m) => ({
           ...m,
-          uri: `media/${m.id}.${m.type === 'video' ? 'mp4' : 'jpg'}`,
+          uri: `media/${m.id}.${m.type === "video" ? "mp4" : "jpg"}`,
         })) || [],
-      })) || [],
+      history:
+        item.history?.map((h) => ({
+          ...h,
+          media:
+            h.media?.map((m) => ({
+              ...m,
+              uri: `media/${m.id}.${m.type === "video" ? "mp4" : "jpg"}`,
+            })) || [],
+        })) || [],
     }));
   };
 
   // Export as ZIP bundle
   const exportData = async (
     items: InventoryItem[],
-    format: 'json' | 'csv' | 'geojson' | 'all' = 'all',
+    format: "json" | "csv" | "geojson" | "all" = "all"
   ): Promise<boolean> => {
     try {
       await cleanDir(EXPORT_DIR);
@@ -182,8 +209,8 @@ export function useExportImport() {
       // Copy media files
       const allMedia = collectMediaFiles(items);
       for (const media of allMedia) {
-        const sourcePath = media.uri.replace('file://', '');
-        const ext = media.type === 'video' ? 'mp4' : 'jpg';
+        const sourcePath = media.uri.replace("file://", "");
+        const ext = media.type === "video" ? "mp4" : "jpg";
         const destPath = `${mediaDir}/${media.id}.${ext}`;
 
         const exists = await RNFS.exists(sourcePath);
@@ -196,25 +223,28 @@ export function useExportImport() {
       const exportItems = prepareItemsForExport(items);
 
       // Write JSON
-      if (format === 'json' || format === 'all') {
+      if (format === "json" || format === "all") {
         const jsonData = JSON.stringify(exportItems, null, 2);
-        await RNFS.writeFile(`${EXPORT_DIR}/data.json`, jsonData, 'utf8');
+        await RNFS.writeFile(`${EXPORT_DIR}/data.json`, jsonData, "utf8");
       }
 
       // Write CSV
-      if (format === 'csv' || format === 'all') {
+      if (format === "csv" || format === "all") {
         const csvData = itemsToCSV(items);
-        await RNFS.writeFile(`${EXPORT_DIR}/data.csv`, csvData, 'utf8');
+        await RNFS.writeFile(`${EXPORT_DIR}/data.csv`, csvData, "utf8");
       }
 
       // Write GeoJSON
-      if (format === 'geojson' || format === 'all') {
+      if (format === "geojson" || format === "all") {
         const geoJsonData = JSON.stringify(itemsToGeoJSON(items), null, 2);
-        await RNFS.writeFile(`${EXPORT_DIR}/data.geojson`, geoJsonData, 'utf8');
+        await RNFS.writeFile(`${EXPORT_DIR}/data.geojson`, geoJsonData, "utf8");
       }
 
       // Create ZIP
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, 19);
       const zipPath = `${RNFS.CachesDirectoryPath}/forestry_export_${timestamp}.zip`;
 
       await zip(EXPORT_DIR, zipPath);
@@ -222,17 +252,20 @@ export function useExportImport() {
       // Share the ZIP file
       await Share.open({
         url: `file://${zipPath}`,
-        type: 'application/zip',
+        type: "application/zip",
         filename: `forestry_export_${timestamp}.zip`,
       });
 
       return true;
     } catch (error: any) {
-      if (error?.message?.includes('User did not share')) {
+      if (error?.message?.includes("User did not share")) {
         return true; // User cancelled share, not an error
       }
-      console.error('Export error:', error);
-      Alert.alert('Export Error', 'Failed to export data: ' + error.message);
+      console.error("Export error:", error);
+      Alert.alert(
+        t("exportError"),
+        t("exportFailed", { message: error.message })
+      );
       return false;
     }
   };
@@ -255,24 +288,24 @@ export function useExportImport() {
 
       // Copy file to cache if needed (for content:// URIs)
       let zipPath = file.uri;
-      if (file.uri.startsWith('content://')) {
+      if (file.uri.startsWith("content://")) {
         zipPath = `${RNFS.CachesDirectoryPath}/import.zip`;
         await RNFS.copyFile(file.uri, zipPath);
       }
 
       // Unzip
-      await unzip(zipPath.replace('file://', ''), IMPORT_DIR);
+      await unzip(zipPath.replace("file://", ""), IMPORT_DIR);
 
       // Read JSON data
       const jsonPath = `${IMPORT_DIR}/data.json`;
       const jsonExists = await RNFS.exists(jsonPath);
 
       if (!jsonExists) {
-        Alert.alert('Import Error', 'No data.json found in the ZIP file');
+        Alert.alert(t("importError"), t("noDataJson"));
         return null;
       }
 
-      const jsonData = await RNFS.readFile(jsonPath, 'utf8');
+      const jsonData = await RNFS.readFile(jsonPath, "utf8");
       const importedItems: InventoryItem[] = JSON.parse(jsonData);
 
       // Copy media files and update URIs
@@ -281,7 +314,7 @@ export function useExportImport() {
 
       const updateMediaUri = async (media: MediaItem): Promise<MediaItem> => {
         if (mediaExists) {
-          const ext = media.type === 'video' ? 'mp4' : 'jpg';
+          const ext = media.type === "video" ? "mp4" : "jpg";
           const sourceFile = `${importMediaDir}/${media.id}.${ext}`;
           const destFile = `${MEDIA_DIR}/${media.id}.${ext}`;
 
@@ -312,7 +345,7 @@ export function useExportImport() {
           for (const m of h.media || []) {
             historyMedia.push(await updateMediaUri(m));
           }
-          updatedHistory.push({...h, media: historyMedia});
+          updatedHistory.push({ ...h, media: historyMedia });
         }
 
         processedItems.push({
@@ -324,24 +357,34 @@ export function useExportImport() {
 
       return processedItems;
     } catch (error: any) {
-      if (isErrorWithCode(error) && error.code === errorCodes.OPERATION_CANCELED) {
+      if (
+        isErrorWithCode(error) &&
+        error.code === errorCodes.OPERATION_CANCELED
+      ) {
         return null; // User cancelled
       }
-      console.error('Import error:', error);
-      Alert.alert('Import Error', 'Failed to import data: ' + error.message);
+      console.error("Import error:", error);
+      Alert.alert(
+        t("importError"),
+        t("importFailed", { message: error.message })
+      );
       return null;
     }
   };
 
   // Flatten nested properties object into dot-notation keys
-  const flattenProperties = (obj: any, prefix = ''): Record<string, any> => {
+  const flattenProperties = (obj: any, prefix = ""): Record<string, any> => {
     const result: Record<string, any> = {};
 
     for (const key of Object.keys(obj)) {
       const value = obj[key];
       const newKey = prefix ? `${prefix}.${key}` : key;
 
-      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      if (
+        value !== null &&
+        typeof value === "object" &&
+        !Array.isArray(value)
+      ) {
         // Recursively flatten nested objects
         Object.assign(result, flattenProperties(value, newKey));
       } else {
@@ -350,6 +393,44 @@ export function useExportImport() {
     }
 
     return result;
+  };
+
+  const buildParsedGeoJSON = (geoJson: any): ParsedGeoJSON | null => {
+    if (!geoJson?.features || !Array.isArray(geoJson.features)) {
+      Alert.alert(t("importError"), t("invalidGeoJson"));
+      return null;
+    }
+
+    // Collect all unique property keys from all features (with flattened nested properties)
+    const propertyKeysSet = new Set<string>();
+    for (const feature of geoJson.features) {
+      if (feature.properties) {
+        const flattened = flattenProperties(feature.properties);
+        Object.keys(flattened).forEach((key) => propertyKeysSet.add(key));
+      }
+    }
+
+    const propertyKeys = Array.from(propertyKeysSet).sort();
+
+    // Find a suggested name key (prefer placeId or similar)
+    let suggestedNameKey: string | undefined;
+    const placeIdKey = propertyKeys.find((k) =>
+      k.toLowerCase().endsWith("placeid")
+    );
+    if (placeIdKey) {
+      suggestedNameKey = placeIdKey;
+    } else {
+      // Fall back to 'name' or 'id' if available
+      suggestedNameKey =
+        propertyKeys.find((k) => k.toLowerCase() === "name") ||
+        propertyKeys.find((k) => k.toLowerCase() === "id");
+    }
+
+    return {
+      features: geoJson.features,
+      propertyKeys,
+      suggestedNameKey,
+    };
   };
 
   // Parse GeoJSON file and return data with available properties
@@ -372,52 +453,102 @@ export function useExportImport() {
 
       // Copy file to cache if needed (for content:// URIs)
       let filePath = file.uri;
-      if (file.uri.startsWith('content://')) {
+      if (file.uri.startsWith("content://")) {
         filePath = `${RNFS.CachesDirectoryPath}/import.geojson`;
         await RNFS.copyFile(file.uri, filePath);
       }
 
-      const geoJsonData = await RNFS.readFile(filePath.replace('file://', ''), 'utf8');
+      const geoJsonData = await RNFS.readFile(
+        filePath.replace("file://", ""),
+        "utf8"
+      );
       const geoJson = JSON.parse(geoJsonData);
-
-      if (!geoJson.features || !Array.isArray(geoJson.features)) {
-        Alert.alert('Import Error', 'Invalid GeoJSON: no features array found');
-        return null;
-      }
-
-      // Collect all unique property keys from all features (with flattened nested properties)
-      const propertyKeysSet = new Set<string>();
-      for (const feature of geoJson.features) {
-        if (feature.properties) {
-          const flattened = flattenProperties(feature.properties);
-          Object.keys(flattened).forEach(key => propertyKeysSet.add(key));
-        }
-      }
-
-      const propertyKeys = Array.from(propertyKeysSet).sort();
-
-      // Find a suggested name key (prefer placeId or similar)
-      let suggestedNameKey: string | undefined;
-      const placeIdKey = propertyKeys.find(k => k.toLowerCase().endsWith('placeid'));
-      if (placeIdKey) {
-        suggestedNameKey = placeIdKey;
-      } else {
-        // Fall back to 'name' or 'id' if available
-        suggestedNameKey = propertyKeys.find(k => k.toLowerCase() === 'name') ||
-                          propertyKeys.find(k => k.toLowerCase() === 'id');
-      }
-
-      return {
-        features: geoJson.features,
-        propertyKeys,
-        suggestedNameKey,
-      };
+      return buildParsedGeoJSON(geoJson);
     } catch (error: any) {
-      if (isErrorWithCode(error) && error.code === errorCodes.OPERATION_CANCELED) {
+      if (
+        isErrorWithCode(error) &&
+        error.code === errorCodes.OPERATION_CANCELED
+      ) {
         return null;
       }
-      console.error('GeoJSON parse error:', error);
-      Alert.alert('Import Error', 'Failed to parse GeoJSON: ' + error.message);
+      console.error("GeoJSON parse error:", error);
+      Alert.alert(
+        t("importError"),
+        t("parseGeoJsonFailed", { message: error.message })
+      );
+      return null;
+    }
+  };
+
+  const parseForestandXml = async (): Promise<ParsedGeoJSON | null> => {
+    try {
+      const result = await pick({
+        type: [types.allFiles],
+      });
+
+      const file = result[0];
+      if (!file?.uri) {
+        return null;
+      }
+
+      const fileName = file.name || file.uri.split("/").pop() || "";
+      if (fileName && !fileName.toLowerCase().endsWith(".xml")) {
+        Alert.alert(t("importError"), t("selectXmlFile"));
+        return null;
+      }
+
+      // Copy file to cache if needed (for content:// URIs)
+      let filePath = file.uri;
+      if (file.uri.startsWith("content://")) {
+        filePath = `${RNFS.CachesDirectoryPath}/import.forestand.xml`;
+        await RNFS.copyFile(file.uri, filePath);
+      }
+
+      const xmlData = await RNFS.readFile(
+        filePath.replace("file://", ""),
+        "utf8"
+      );
+
+      const response = await fetch(FORESTAND_IMPORT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/xml",
+          Accept: "application/json",
+        },
+        body: xmlData,
+      });
+
+      const responseText = await response.text();
+      if (!response.ok) {
+        const statusLine = `${response.status} ${response.statusText}`.trim();
+        const details = `${statusLine}${
+          responseText ? `\n${responseText}` : ""
+        }`;
+        Alert.alert(t("importError"), t("forestandConvertFailed", { details }));
+        return null;
+      }
+
+      let geoJson: any;
+      try {
+        geoJson = JSON.parse(responseText);
+      } catch (parseError: any) {
+        Alert.alert(t("importError"), t("forestandResponseInvalid"));
+        return null;
+      }
+
+      return buildParsedGeoJSON(geoJson);
+    } catch (error: any) {
+      if (
+        isErrorWithCode(error) &&
+        error.code === errorCodes.OPERATION_CANCELED
+      ) {
+        return null;
+      }
+      console.error("Forestand XML import error:", error);
+      Alert.alert(
+        t("importError"),
+        t("importFailed", { message: error.message })
+      );
       return null;
     }
   };
@@ -427,7 +558,7 @@ export function useExportImport() {
     if (!key || !obj) {
       return undefined;
     }
-    const parts = key.split('.');
+    const parts = key.split(".");
     let value = obj;
     for (const part of parts) {
       if (value === null || value === undefined) {
@@ -453,7 +584,10 @@ export function useExportImport() {
     if (coords.length > 1) {
       const first = coords[0];
       const last = coords[coords.length - 1];
-      if (first.latitude === last.latitude && first.longitude === last.longitude) {
+      if (
+        first.latitude === last.latitude &&
+        first.longitude === last.longitude
+      ) {
         coords = coords.slice(0, -1);
       }
     }
@@ -473,7 +607,7 @@ export function useExportImport() {
     notes: string,
     props: any,
     now: string,
-    suffix?: string,
+    suffix?: string
   ): InventoryArea | null => {
     if (!rings || rings.length === 0) {
       return null;
@@ -497,16 +631,23 @@ export function useExportImport() {
     const flattened = flattenProperties(props);
 
     // Get color from properties (support various common property names, including nested)
-    const color = flattened.color || flattened.Color || flattened.COLOR ||
-                  flattened.fill || flattened.Fill || flattened.FILL ||
-                  flattened.fillColor || flattened.FillColor || undefined;
+    const color =
+      flattened.color ||
+      flattened.Color ||
+      flattened.COLOR ||
+      flattened.fill ||
+      flattened.Fill ||
+      flattened.FILL ||
+      flattened.fillColor ||
+      flattened.FillColor ||
+      undefined;
 
     const id = suffix ? `${baseId}_${suffix}` : baseId;
     const itemName = suffix ? `${name} (${suffix})` : name;
 
     return {
       id,
-      type: 'area',
+      type: "area",
       name: itemName,
       notes,
       visible: true,
@@ -525,7 +666,7 @@ export function useExportImport() {
   const processGeoJSON = (
     features: any[],
     nameProperty: string,
-    notesProperty: string,
+    notesProperty: string
   ): InventoryItem[] | null => {
     const now = new Date().toISOString();
     const items: InventoryItem[] = [];
@@ -537,43 +678,56 @@ export function useExportImport() {
 
       const props = feature.properties || {};
       // Support dot-notation for nested properties
-      const name = nameProperty ? String(getNestedValue(props, nameProperty) || '') : '';
-      const notes = notesProperty ? String(getNestedValue(props, notesProperty) || '') : '';
+      const name = nameProperty
+        ? String(getNestedValue(props, nameProperty) || "")
+        : "";
+      const notes = notesProperty
+        ? String(getNestedValue(props, notesProperty) || "")
+        : "";
 
       // Use fid as unique id if it exists, otherwise generate one
-      const baseId = props.fid != null
-        ? String(props.fid)
-        : Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const baseId =
+        props.fid != null
+          ? String(props.fid)
+          : Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
-      if (feature.geometry.type === 'Point') {
+      if (feature.geometry.type === "Point") {
         const [longitude, latitude] = feature.geometry.coordinates;
         const point: InventoryPoint = {
           id: baseId,
-          type: 'point',
+          type: "point",
           name,
           notes,
           visible: true,
           created: now,
-          coordinate: {latitude, longitude},
+          coordinate: { latitude, longitude },
           history: [],
           media: [],
           properties: props,
         };
         items.push(point);
-      } else if (feature.geometry.type === 'Polygon') {
+      } else if (feature.geometry.type === "Polygon") {
         // Polygon: all rings (outer + holes)
         const rings = feature.geometry.coordinates;
         const areaItem = processPolygon(rings, baseId, name, notes, props, now);
         if (areaItem) {
           items.push(areaItem);
         }
-      } else if (feature.geometry.type === 'MultiPolygon') {
+      } else if (feature.geometry.type === "MultiPolygon") {
         // MultiPolygon: create separate items for each polygon (with their holes)
         const polygons = feature.geometry.coordinates;
         for (let i = 0; i < polygons.length; i++) {
           const rings = polygons[i]; // All rings of this polygon (outer + holes)
           const suffix = polygons.length > 1 ? String(i + 1) : undefined;
-          const areaItem = processPolygon(rings, baseId, name, notes, props, now, suffix);
+          const areaItem = processPolygon(
+            rings,
+            baseId,
+            name,
+            notes,
+            props,
+            now,
+            suffix
+          );
           if (areaItem) {
             items.push(areaItem);
           }
@@ -582,7 +736,7 @@ export function useExportImport() {
     }
 
     if (items.length === 0) {
-      Alert.alert('Import Error', 'No valid Point or Polygon features found in GeoJSON');
+      Alert.alert(t("importError"), t("noValidFeatures"));
       return null;
     }
 
@@ -593,6 +747,7 @@ export function useExportImport() {
     exportData,
     importData,
     parseGeoJSON,
+    parseForestandXml,
     processGeoJSON,
   };
 }

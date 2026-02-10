@@ -8,7 +8,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 
-import { InventoryItem, Coordinate, DrawingMode, Region } from "./src/types";
+import {
+  InventoryItem,
+  Coordinate,
+  DrawingMode,
+  Region,
+  HistoryEntry,
+} from "./src/types";
 import {
   useLocation,
   useInventory,
@@ -44,7 +50,7 @@ function AppContent() {
     gpsTracking,
     setGpsTracking,
   });
-  const { language, setLanguage } = useLocalization();
+  const { language, setLanguage, t } = useLocalization();
   const {
     items,
     addItem,
@@ -55,8 +61,13 @@ function AppContent() {
     importItems,
     appendItems,
   } = useInventory();
-  const { exportData, importData, parseGeoJSON, processGeoJSON } =
-    useExportImport();
+  const {
+    exportData,
+    importData,
+    parseGeoJSON,
+    parseForestandXml,
+    processGeoJSON,
+  } = useExportImport();
   const mapRef = useRef<InventoryMapRef>(null);
 
   const [menuVisible, setMenuVisible] = useState(false);
@@ -166,7 +177,7 @@ function AppContent() {
 
   const completeArea = () => {
     if (areaPoints.length < 3) {
-      Alert.alert("Error", "An area needs at least 3 points");
+      Alert.alert(t("error"), t("areaMinPoints"));
       return;
     }
 
@@ -190,7 +201,7 @@ function AppContent() {
 
   const saveItem = () => {
     if (!currentItem.name) {
-      Alert.alert("Error", "Please enter a name");
+      Alert.alert(t("error"), t("nameRequired"));
       return;
     }
 
@@ -260,7 +271,7 @@ function AppContent() {
   const completeReposition = () => {
     if (repositionItem && repositionItem.type === "area") {
       if (areaPoints.length < 3) {
-        Alert.alert("Error", "An area needs at least 3 points");
+        Alert.alert(t("error"), t("areaMinPoints"));
         return;
       }
       const area = calculateArea(areaPoints);
@@ -287,10 +298,10 @@ function AppContent() {
   };
 
   const handleImport = async () => {
-    Alert.alert("Import Data", "Choose import format", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("importData"), t("chooseFormat"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "GeoJSON (Add)",
+        text: t("geoJsonAdd"),
         onPress: async () => {
           const parsed = await parseGeoJSON();
           if (parsed) {
@@ -302,13 +313,28 @@ function AppContent() {
         },
       },
       {
-        text: "ZIP (Replace All)",
+        text: t("forestandXmlImport"),
+        onPress: async () => {
+          const parsed = await parseForestandXml();
+          if (parsed) {
+            setGeoJsonFeatures(parsed.features);
+            setGeoJsonProperties(parsed.propertyKeys);
+            setGeoJsonSuggestedName(parsed.suggestedNameKey);
+            setPropertyMappingVisible(true);
+          }
+        },
+      },
+      {
+        text: t("zipReplaceAll"),
         style: "destructive",
         onPress: async () => {
           const importedItems = await importData();
           if (importedItems) {
             importItems(importedItems);
-            Alert.alert("Success", `Imported ${importedItems.length} items`);
+            Alert.alert(
+              t("success"),
+              t("importedItems", { count: importedItems.length })
+            );
           }
         },
       },
@@ -326,7 +352,10 @@ function AppContent() {
     );
     if (importedItems) {
       appendItems(importedItems);
-      Alert.alert("Success", `Imported ${importedItems.length} items`);
+      Alert.alert(
+        t("success"),
+        t("addedItems", { count: importedItems.length })
+      );
     }
     setPropertyMappingVisible(false);
     setGeoJsonFeatures([]);
@@ -339,6 +368,14 @@ function AppContent() {
     setGeoJsonFeatures([]);
     setGeoJsonProperties([]);
     setGeoJsonSuggestedName(undefined);
+  };
+
+  const handleAddHistoryEntry = (itemId: string, history: HistoryEntry[]) => {
+    const existingItem = items.find((entry) => entry.id === itemId);
+    if (!existingItem) {
+      return;
+    }
+    updateItem({ ...existingItem, history });
   };
 
   if (!isLoaded) {
@@ -409,6 +446,7 @@ function AppContent() {
         onSave={saveItem}
         onCancel={cancelModal}
         onEdit={handleSwitchToEdit}
+        onAddHistoryEntry={handleAddHistoryEntry}
       />
 
       <AboutModal

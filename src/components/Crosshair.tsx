@@ -1,12 +1,13 @@
-import React from 'react';
-import {View, Text, TouchableOpacity} from 'react-native';
-import {crosshairStyles as styles} from '../styles';
-import {DrawingMode} from '../types';
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { crosshairStyles as styles } from "../styles";
+import { useLocalization } from "../localization";
+import { DrawingMode } from "../types";
 
 interface CrosshairProps {
   drawingMode: DrawingMode;
   areaPointsCount: number;
-  repositionType?: 'point' | 'area';
+  repositionType?: "point" | "area";
   onConfirm: () => void;
   onCompleteReposition?: () => void;
   onCancelReposition?: () => void;
@@ -20,24 +21,25 @@ export function Crosshair({
   onCompleteReposition,
   onCancelReposition,
 }: CrosshairProps) {
-  if (drawingMode === 'none') {
+  const { t } = useLocalization();
+  if (drawingMode === "none") {
     return null;
   }
 
   const getButtonText = () => {
-    if (drawingMode === 'point') {
-      return 'Place Point';
+    if (drawingMode === "point") {
+      return t("addPoint");
     }
-    if (drawingMode === 'area') {
-      return `Add Point ${areaPointsCount + 1}`;
+    if (drawingMode === "area") {
+      return `${t("addAreaPoint")} ${areaPointsCount + 1}`;
     }
-    if (drawingMode === 'reposition') {
-      if (repositionType === 'point') {
-        return 'Set New Position';
+    if (drawingMode === "reposition") {
+      if (repositionType === "point") {
+        return t("setNewPosition");
       }
-      return `Add Point ${areaPointsCount + 1}`;
+      return `${t("addAreaPoint")} ${areaPointsCount + 1}`;
     }
-    return '';
+    return "";
   };
 
   return (
@@ -52,19 +54,25 @@ export function Crosshair({
         <Text style={styles.confirmButtonText}>{getButtonText()}</Text>
       </TouchableOpacity>
 
-      {drawingMode === 'reposition' && (
+      {drawingMode === "reposition" && (
         <View style={styles.repositionButtons}>
-          {repositionType === 'area' && areaPointsCount >= 3 && (
+          {repositionType === "area" && areaPointsCount >= 3 && (
             <TouchableOpacity
               style={styles.completeButton}
-              onPress={onCompleteReposition}>
-              <Text style={styles.confirmButtonText}>Complete</Text>
+              onPress={onCompleteReposition}
+            >
+              <Text style={styles.confirmButtonText}>
+                {t("completeReposition")}
+              </Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             style={styles.cancelRepositionButton}
-            onPress={onCancelReposition}>
-            <Text style={styles.confirmButtonText}>Cancel</Text>
+            onPress={onCancelReposition}
+          >
+            <Text style={styles.confirmButtonText}>
+              {t("cancelReposition")}
+            </Text>
           </TouchableOpacity>
         </View>
       )}

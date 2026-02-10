@@ -1,8 +1,16 @@
-import React from 'react';
-import {View, Text, ScrollView, TouchableOpacity, Pressable, Alert} from 'react-native';
-import {InventoryItem} from '../../types';
-import {sidebarStyles as styles} from '../../styles';
-import {ItemCard} from './ItemCard';
+import React from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Pressable,
+  Alert,
+} from "react-native";
+import { InventoryItem } from "../../types";
+import { sidebarStyles as styles } from "../../styles";
+import { ItemCard } from "./ItemCard";
+import { useLocalization } from "../../localization";
 
 interface SidebarProps {
   visible: boolean;
@@ -11,7 +19,7 @@ interface SidebarProps {
   onDelete: (id: string) => void;
   onView: (item: InventoryItem) => void;
   onReposition: (item: InventoryItem) => void;
-  onExport: (format: 'json' | 'csv' | 'geojson' | 'all') => void;
+  onExport: (format: "json" | "csv" | "geojson" | "all") => void;
   onImport: () => void;
   onClose: () => void;
 }
@@ -31,27 +39,29 @@ export function Sidebar({
     return null;
   }
 
+  const { t } = useLocalization();
+
   const handleExport = () => {
-    Alert.alert('Export Format', 'Choose export format:', [
+    Alert.alert(t("exportFormat"), t("chooseExportFormat"), [
       {
-        text: 'All formats',
-        onPress: () => onExport('all'),
+        text: t("allFormats"),
+        onPress: () => onExport("all"),
       },
       {
-        text: 'JSON only',
-        onPress: () => onExport('json'),
+        text: t("jsonOnly"),
+        onPress: () => onExport("json"),
       },
       {
-        text: 'CSV only',
-        onPress: () => onExport('csv'),
+        text: t("csvOnly"),
+        onPress: () => onExport("csv"),
       },
       {
-        text: 'GeoJSON only',
-        onPress: () => onExport('geojson'),
+        text: t("geoJsonOnly"),
+        onPress: () => onExport("geojson"),
       },
       {
-        text: 'Cancel',
-        style: 'cancel',
+        text: t("cancel"),
+        style: "cancel",
       },
     ]);
   };
@@ -60,9 +70,11 @@ export function Sidebar({
     <>
       <Pressable style={styles.overlay} onPress={onClose} />
       <View style={styles.sidebar}>
-        <Text style={styles.sidebarTitle}>Items ({items.length})</Text>
+        <Text style={styles.sidebarTitle}>
+          {t("itemsCount", { count: items.length })}
+        </Text>
         <ScrollView style={styles.itemsList}>
-          {items.map(item => (
+          {items.map((item) => (
             <ItemCard
               key={item.id}
               item={item}
@@ -75,10 +87,10 @@ export function Sidebar({
         </ScrollView>
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
-            <Text style={styles.exportText}>Export</Text>
+            <Text style={styles.exportText}>{t("export")}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.importButton} onPress={onImport}>
-            <Text style={styles.exportText}>Import</Text>
+            <Text style={styles.exportText}>{t("import")}</Text>
           </TouchableOpacity>
         </View>
       </View>
