@@ -15,9 +15,10 @@ import {
   MediaItem,
   HistoryEntry,
   Coordinate,
-} from "../types";
-import { FORESTAND_IMPORT_URL } from "../constants";
-import { useLocalization } from "../localization";
+} from "../../../types";
+import { useLocalization } from "../../../localization";
+import { convertForestandXml } from "../services/forestandApi";
+import { ParsedGeoJSON, flattenProperties } from "../types/GeoJson";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
 const IMPORT_DIR = `${RNFS.CachesDirectoryPath}/import`;
@@ -34,7 +35,7 @@ const calculateArea = (coords: Coordinate[]): number => {
   return Math.abs(area / 2) * 111320 * 111320;
 };
 
-export function useExportImport() {
+export function useImportExport() {
   const { t } = useLocalization();
   const ensureDir = async (dir: string) => {
     const exists = await RNFS.exists(dir);
@@ -372,29 +373,6 @@ export function useExportImport() {
     }
   };
 
-  // Flatten nested properties object into dot-notation keys
-  const flattenProperties = (obj: any, prefix = ""): Record<string, any> => {
-    const result: Record<string, any> = {};
-
-    for (const key of Object.keys(obj)) {
-      const value = obj[key];
-      const newKey = prefix ? `${prefix}.${key}` : key;
-
-      if (
-        value !== null &&
-        typeof value === "object" &&
-        !Array.isArray(value)
-      ) {
-        // Recursively flatten nested objects
-        Object.assign(result, flattenProperties(value, newKey));
-      } else {
-        result[newKey] = value;
-      }
-    }
-
-    return result;
-  };
-
   const buildParsedGeoJSON = (geoJson: any): ParsedGeoJSON | null => {
     if (!geoJson?.features || !Array.isArray(geoJson.features)) {
       Alert.alert(t("importError"), t("invalidGeoJson"));
@@ -432,13 +410,6 @@ export function useExportImport() {
       suggestedNameKey,
     };
   };
-
-  // Parse GeoJSON file and return data with available properties
-  interface ParsedGeoJSON {
-    features: any[];
-    propertyKeys: string[];
-    suggestedNameKey?: string;
-  }
 
   const parseGeoJSON = async (): Promise<ParsedGeoJSON | null> => {
     try {
@@ -509,20 +480,10 @@ export function useExportImport() {
         "utf8"
       );
 
-      const response = await fetch(FORESTAND_IMPORT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/xml",
-          Accept: "application/json",
-        },
-        body: xmlData,
-      });
-
-      const responseText = await response.text();
+      const response = await convertForestandXml(xmlData);
       if (!response.ok) {
-        const statusLine = `${response.status} ${response.statusText}`.trim();
-        const details = `${statusLine}${
-          responseText ? `\n${responseText}` : ""
+        const details = `${response.statusLine}${
+          response.text ? `\n${response.text}` : ""
         }`;
         Alert.alert(t("importError"), t("forestandConvertFailed", { details }));
         return null;
@@ -530,7 +491,7 @@ export function useExportImport() {
 
       let geoJson: any;
       try {
-        geoJson = JSON.parse(responseText);
+        geoJson = JSON.parse(response.text);
       } catch (parseError: any) {
         Alert.alert(t("importError"), t("forestandResponseInvalid"));
         return null;
@@ -601,7 +562,7 @@ export function useExportImport() {
 
   // Helper to process a polygon (with potential holes) into an InventoryArea
   const processPolygon = (
-    rings: number[][][], // Array of rings: [outerRing, hole1, hole2, ...]
+    rings: number[][][],
     baseId: string,
     name: string,
     notes: string,
@@ -717,7 +678,7 @@ export function useExportImport() {
         // MultiPolygon: create separate items for each polygon (with their holes)
         const polygons = feature.geometry.coordinates;
         for (let i = 0; i < polygons.length; i++) {
-          const rings = polygons[i]; // All rings of this polygon (outer + holes)
+          const rings = polygons[i];
           const suffix = polygons.length > 1 ? String(i + 1) : undefined;
           const areaItem = processPolygon(
             rings,

@@ -10,4 +10,4 @@ export const DEFAULT_REGION: Region = {
 };
 
 export const FORESTAND_IMPORT_URL =
-  "https://myforesttracker.gcp.jknowledge.se/api/forestand/geoconvert";
+  "https://myforesttracker.gcp.jknowledge.se/api/forestand/convert/geojsonv2";

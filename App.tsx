@@ -15,12 +15,8 @@ import {
   Region,
   HistoryEntry,
 } from "./src/types";
-import {
-  useLocation,
-  useInventory,
-  useExportImport,
-  useSettings,
-} from "./src/hooks";
+import { useLocation, useInventory, useSettings } from "./src/hooks";
+import { useImportExport } from "./src/features/importExport";
 import {
   Header,
   ToolPanel,
@@ -67,7 +63,7 @@ function AppContent() {
     parseGeoJSON,
     parseForestandXml,
     processGeoJSON,
-  } = useExportImport();
+  } = useImportExport();
   const mapRef = useRef<InventoryMapRef>(null);
 
   const [menuVisible, setMenuVisible] = useState(false);
