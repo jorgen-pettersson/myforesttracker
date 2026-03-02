@@ -1,8 +1,8 @@
-import React from 'react';
-import {View, Image, TouchableOpacity, Text, Modal} from 'react-native';
-import Video from 'react-native-video';
-import {MediaItem} from '../types';
-import {mediaStyles as styles} from '../styles';
+import React from "react";
+import { View, Image, TouchableOpacity, Text, Modal } from "react-native";
+import Video from "react-native-video";
+import { MediaItem } from "../features/inventory";
+import { mediaStyles as styles } from "../styles";
 
 interface MediaViewerProps {
   visible: boolean;
@@ -10,7 +10,7 @@ interface MediaViewerProps {
   onClose: () => void;
 }
 
-export function MediaViewer({visible, media, onClose}: MediaViewerProps) {
+export function MediaViewer({ visible, media, onClose }: MediaViewerProps) {
   if (!media) {
     return null;
   }
@@ -18,15 +18,15 @@ export function MediaViewer({visible, media, onClose}: MediaViewerProps) {
   return (
     <Modal visible={visible} animationType="fade" transparent={false}>
       <View style={styles.viewerContainer}>
-        {media.type === 'photo' ? (
+        {media.type === "photo" ? (
           <Image
-            source={{uri: media.uri}}
+            source={{ uri: media.uri }}
             style={styles.viewerImage}
             resizeMode="contain"
           />
         ) : (
           <Video
-            source={{uri: media.uri}}
+            source={{ uri: media.uri }}
             style={styles.viewerVideo}
             resizeMode="contain"
             controls

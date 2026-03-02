@@ -1,8 +1,8 @@
-import React from 'react';
-import {View, Text, TouchableOpacity} from 'react-native';
-import {InventoryItem} from '../../types';
-import {itemCardStyles as styles} from '../../styles';
-import {formatArea} from '../../utils';
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { InventoryItem } from "../../features/inventory";
+import { itemCardStyles as styles } from "../../styles";
+import { formatArea } from "../../utils";
 
 interface ItemCardProps {
   item: InventoryItem;
@@ -12,40 +12,50 @@ interface ItemCardProps {
   onReposition: (item: InventoryItem) => void;
 }
 
-export function ItemCard({item, onToggleVisibility, onDelete, onView, onReposition}: ItemCardProps) {
+export function ItemCard({
+  item,
+  onToggleVisibility,
+  onDelete,
+  onView,
+  onReposition,
+}: ItemCardProps) {
   return (
     <TouchableOpacity
       style={[styles.itemCard, item.visible === false && styles.itemCardHidden]}
       onPress={() => onView(item)}
-      activeOpacity={0.7}>
+      activeOpacity={0.7}
+    >
       <View style={styles.itemHeader}>
         <Text style={styles.itemType}>
-          {item.type === 'point' ? '📌' : '⬜'}
+          {item.type === "point" ? "📌" : "⬜"}
         </Text>
         <Text style={styles.itemName}>{item.name}</Text>
         <TouchableOpacity
           style={styles.visibilityButton}
-          onPress={() => onToggleVisibility(item.id)}>
+          onPress={() => onToggleVisibility(item.id)}
+        >
           <Text style={styles.visibilityText}>
-            {item.visible !== false ? '👁' : '👁‍🗨'}
+            {item.visible !== false ? "👁" : "👁‍🗨"}
           </Text>
         </TouchableOpacity>
       </View>
       <Text style={styles.itemDetail}>
         {new Date(item.created).toLocaleString()}
       </Text>
-      {item.type === 'area' && item.area && (
+      {item.type === "area" && item.area && (
         <Text style={styles.itemDetail}>Area: {formatArea(item.area)}</Text>
       )}
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.repositionButton}
-          onPress={() => onReposition(item)}>
+          onPress={() => onReposition(item)}
+        >
           <Text style={styles.buttonText}>Move</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => onDelete(item.id)}>
+          onPress={() => onDelete(item.id)}
+        >
           <Text style={styles.buttonText}>Delete</Text>
         </TouchableOpacity>
       </View>

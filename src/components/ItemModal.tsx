@@ -8,7 +8,7 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
-import { InventoryItem, HistoryEntry, MediaItem } from "../types";
+import { InventoryItem, HistoryEntry, MediaItem } from "../features/inventory";
 import { itemModalStyles as styles, mediaStyles } from "../styles";
 import { useMedia } from "../hooks";
 import { MediaGallery } from "./MediaGallery";

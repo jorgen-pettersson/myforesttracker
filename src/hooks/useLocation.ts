@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Platform, PermissionsAndroid } from "react-native";
 import Geolocation from "@react-native-community/geolocation";
-import { Region, Coordinate } from "../types";
+import { Region, Coordinate } from "../features/inventory";
 import { DEFAULT_REGION } from "../constants";
 
 interface UseLocationProps {

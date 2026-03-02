@@ -7,7 +7,7 @@ import {
   Region,
   Coordinate,
   DrawingMode,
-} from "../../types";
+} from "../../features/inventory";
 import { mapStyles as styles } from "../../styles";
 import { Crosshair } from "../Crosshair";
 

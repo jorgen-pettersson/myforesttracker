@@ -7,7 +7,7 @@ import {
   Pressable,
   Alert,
 } from "react-native";
-import { InventoryItem } from "../../types";
+import { InventoryItem } from "../../features/inventory";
 import { sidebarStyles as styles } from "../../styles";
 import { ItemCard } from "./ItemCard";
 import { useLocalization } from "../../localization";

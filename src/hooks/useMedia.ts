@@ -1,13 +1,13 @@
-import {Alert, Platform, PermissionsAndroid} from 'react-native';
+import { Alert, Platform, PermissionsAndroid } from "react-native";
 import {
   launchCamera,
   launchImageLibrary,
   MediaType,
   CameraOptions,
   ImageLibraryOptions,
-} from 'react-native-image-picker';
-import RNFS from 'react-native-fs';
-import {MediaItem} from '../types';
+} from "react-native-image-picker";
+import RNFS from "react-native-fs";
+import { MediaItem } from "../features/inventory";
 
 const MEDIA_DIR = `${RNFS.DocumentDirectoryPath}/media`;
 
@@ -20,7 +20,7 @@ export function useMedia() {
   };
 
   const requestCameraPermission = async (): Promise<boolean> => {
-    if (Platform.OS !== 'android') {
+    if (Platform.OS !== "android") {
       return true;
     }
 
@@ -28,12 +28,13 @@ export function useMedia() {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
         {
-          title: 'Camera Permission',
-          message: 'This app needs access to your camera to take photos and videos.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
+          title: "Camera Permission",
+          message:
+            "This app needs access to your camera to take photos and videos.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK",
+        }
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
@@ -43,14 +44,17 @@ export function useMedia() {
   };
 
   const pickMedia = (
-    source: 'camera' | 'gallery',
-    mediaType: MediaType = 'mixed',
+    source: "camera" | "gallery",
+    mediaType: MediaType = "mixed"
   ): Promise<MediaItem | null> => {
-    return new Promise(async resolve => {
-      if (source === 'camera') {
+    return new Promise(async (resolve) => {
+      if (source === "camera") {
         const hasPermission = await requestCameraPermission();
         if (!hasPermission) {
-          Alert.alert('Permission Denied', 'Camera permission is required to take photos and videos.');
+          Alert.alert(
+            "Permission Denied",
+            "Camera permission is required to take photos and videos."
+          );
           resolve(null);
           return;
         }
@@ -59,7 +63,7 @@ export function useMedia() {
       const options: CameraOptions & ImageLibraryOptions = {
         mediaType,
         quality: 0.8,
-        videoQuality: 'medium',
+        videoQuality: "medium",
         durationLimit: 60,
         includeBase64: false,
       };
@@ -67,7 +71,11 @@ export function useMedia() {
       const callback = async (response: any) => {
         if (response.didCancel || response.errorCode) {
           if (response.errorCode) {
-            console.error('Image picker error:', response.errorCode, response.errorMessage);
+            console.error(
+              "Image picker error:",
+              response.errorCode,
+              response.errorMessage
+            );
           }
           resolve(null);
           return;
@@ -83,8 +91,8 @@ export function useMedia() {
           await ensureMediaDir();
 
           const id = Date.now().toString();
-          const isVideo = asset.type?.startsWith('video') || false;
-          const extension = isVideo ? 'mp4' : 'jpg';
+          const isVideo = asset.type?.startsWith("video") || false;
+          const extension = isVideo ? "mp4" : "jpg";
           const fileName = `${id}.${extension}`;
           const destPath = `${MEDIA_DIR}/${fileName}`;
 
@@ -93,19 +101,19 @@ export function useMedia() {
           const mediaItem: MediaItem = {
             id,
             uri: `file://${destPath}`,
-            type: isVideo ? 'video' : 'photo',
+            type: isVideo ? "video" : "photo",
             timestamp: new Date().toISOString(),
           };
 
           resolve(mediaItem);
         } catch (error) {
-          console.error('Error saving media:', error);
-          Alert.alert('Error', 'Failed to save media');
+          console.error("Error saving media:", error);
+          Alert.alert("Error", "Failed to save media");
           resolve(null);
         }
       };
 
-      if (source === 'camera') {
+      if (source === "camera") {
         launchCamera(options, callback);
       } else {
         launchImageLibrary(options, callback);
@@ -115,19 +123,21 @@ export function useMedia() {
 
   const deleteMedia = async (mediaItem: MediaItem): Promise<boolean> => {
     try {
-      const filePath = mediaItem.uri.replace('file://', '');
+      const filePath = mediaItem.uri.replace("file://", "");
       const exists = await RNFS.exists(filePath);
       if (exists) {
         await RNFS.unlink(filePath);
       }
       return true;
     } catch (error) {
-      console.error('Error deleting media:', error);
+      console.error("Error deleting media:", error);
       return false;
     }
   };
 
-  const deleteMultipleMedia = async (mediaItems: MediaItem[]): Promise<void> => {
+  const deleteMultipleMedia = async (
+    mediaItems: MediaItem[]
+  ): Promise<void> => {
     for (const item of mediaItems) {
       await deleteMedia(item);
     }
@@ -135,26 +145,26 @@ export function useMedia() {
 
   const showMediaPicker = (
     onSelect: (media: MediaItem | null) => void,
-    mediaType: MediaType = 'mixed',
+    mediaType: MediaType = "mixed"
   ) => {
-    Alert.alert('Add Media', 'Choose source', [
+    Alert.alert("Add Media", "Choose source", [
       {
-        text: 'Camera',
+        text: "Camera",
         onPress: async () => {
-          const media = await pickMedia('camera', mediaType);
+          const media = await pickMedia("camera", mediaType);
           onSelect(media);
         },
       },
       {
-        text: 'Gallery',
+        text: "Gallery",
         onPress: async () => {
-          const media = await pickMedia('gallery', mediaType);
+          const media = await pickMedia("gallery", mediaType);
           onSelect(media);
         },
       },
       {
-        text: 'Cancel',
-        style: 'cancel',
+        text: "Cancel",
+        style: "cancel",
       },
     ]);
   };

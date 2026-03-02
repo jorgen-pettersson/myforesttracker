@@ -14,9 +14,11 @@ import {
   DrawingMode,
   Region,
   HistoryEntry,
-} from "./src/types";
-import { useLocation, useInventory, useSettings } from "./src/hooks";
+} from "./src/features/inventory";
+import { useLocation } from "./src/hooks";
 import { useImportExport } from "./src/features/importExport";
+import { useSettings } from "./src/features/preferences";
+import { useInventory } from "./src/features/inventory";
 import {
   Header,
   ToolPanel,

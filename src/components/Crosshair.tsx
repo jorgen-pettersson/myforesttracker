@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { crosshairStyles as styles } from "../styles";
 import { useLocalization } from "../localization";
-import { DrawingMode } from "../types";
+import { DrawingMode } from "../features/inventory";
 
 interface CrosshairProps {
   drawingMode: DrawingMode;

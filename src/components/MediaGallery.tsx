@@ -1,8 +1,8 @@
-import React, {useState} from 'react';
-import {View, Image, TouchableOpacity, ScrollView, Text} from 'react-native';
-import {MediaItem} from '../types';
-import {mediaStyles as styles} from '../styles';
-import {MediaViewer} from './MediaViewer';
+import React, { useState } from "react";
+import { View, Image, TouchableOpacity, ScrollView, Text } from "react-native";
+import { MediaItem } from "../features/inventory";
+import { mediaStyles as styles } from "../styles";
+import { MediaViewer } from "./MediaViewer";
 
 interface MediaGalleryProps {
   media: MediaItem[];
@@ -10,7 +10,11 @@ interface MediaGalleryProps {
   editable?: boolean;
 }
 
-export function MediaGallery({media, onRemove, editable = false}: MediaGalleryProps) {
+export function MediaGallery({
+  media,
+  onRemove,
+  editable = false,
+}: MediaGalleryProps) {
   const [viewerVisible, setViewerVisible] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
@@ -30,15 +34,20 @@ export function MediaGallery({media, onRemove, editable = false}: MediaGalleryPr
 
   return (
     <View style={styles.galleryContainer}>
-      <ScrollView horizontal style={styles.galleryScroll} showsHorizontalScrollIndicator={false}>
-        {media.map(item => (
+      <ScrollView
+        horizontal
+        style={styles.galleryScroll}
+        showsHorizontalScrollIndicator={false}
+      >
+        {media.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={styles.galleryItem}
             onPress={() => handlePress(item)}
-            activeOpacity={0.8}>
-            <Image source={{uri: item.uri}} style={styles.galleryImage} />
-            {item.type === 'video' && (
+            activeOpacity={0.8}
+          >
+            <Image source={{ uri: item.uri }} style={styles.galleryImage} />
+            {item.type === "video" && (
               <View style={styles.videoIndicator}>
                 <Text style={styles.videoIcon}>▶</Text>
               </View>
@@ -46,7 +55,8 @@ export function MediaGallery({media, onRemove, editable = false}: MediaGalleryPr
             {editable && onRemove && (
               <TouchableOpacity
                 style={styles.deleteButton}
-                onPress={e => handleRemove(item, e)}>
+                onPress={(e) => handleRemove(item, e)}
+              >
                 <Text style={styles.deleteButtonText}>×</Text>
               </TouchableOpacity>
             )}

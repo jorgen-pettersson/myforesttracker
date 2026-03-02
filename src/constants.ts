@@ -1,6 +1,4 @@
-import { Region } from "./types";
-
-export const STORAGE_KEY = "@forestry_inventory";
+import { Region } from "./features/inventory";
 
 export const DEFAULT_REGION: Region = {
   latitude: 37.78825,

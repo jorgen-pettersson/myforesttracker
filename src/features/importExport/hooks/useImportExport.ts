@@ -15,9 +15,9 @@ import {
   MediaItem,
   HistoryEntry,
   Coordinate,
-} from "../../../types";
+} from "../../../features/inventory";
 import { useLocalization } from "../../../localization";
-import { convertForestandXml } from "../services/forestandApi";
+import { convertForestandXmlToGeoJson } from "../services/forestandLocal";
 import { ParsedGeoJSON, flattenProperties } from "../types/GeoJson";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
@@ -480,23 +480,7 @@ export function useImportExport() {
         "utf8"
       );
 
-      const response = await convertForestandXml(xmlData);
-      if (!response.ok) {
-        const details = `${response.statusLine}${
-          response.text ? `\n${response.text}` : ""
-        }`;
-        Alert.alert(t("importError"), t("forestandConvertFailed", { details }));
-        return null;
-      }
-
-      let geoJson: any;
-      try {
-        geoJson = JSON.parse(response.text);
-      } catch (parseError: any) {
-        Alert.alert(t("importError"), t("forestandResponseInvalid"));
-        return null;
-      }
-
+      const geoJson = convertForestandXmlToGeoJson(xmlData);
       return buildParsedGeoJSON(geoJson);
     } catch (error: any) {
       if (
