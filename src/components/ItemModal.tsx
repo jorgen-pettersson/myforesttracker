@@ -8,7 +8,7 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
-import { InventoryItem, HistoryEntry, MediaItem } from "../features/inventory";
+import { Place, HistoryEntry, MediaItem } from "../features/inventory";
 import { itemModalStyles as styles, mediaStyles } from "../styles";
 import { useMedia } from "../hooks";
 import { MediaGallery } from "./MediaGallery";
@@ -32,9 +32,9 @@ type ModalMode = "view" | "edit" | "create";
 
 interface ItemModalProps {
   visible: boolean;
-  item: Partial<InventoryItem>;
+  item: Partial<Place>;
   mode?: ModalMode;
-  onChangeItem: (item: Partial<InventoryItem>) => void;
+  onChangeItem: (item: Partial<Place>) => void;
   onSave: () => void;
   onCancel: () => void;
   onEdit?: () => void;
@@ -53,7 +53,7 @@ export function ItemModal({
 }: ItemModalProps) {
   const scrollViewRef = useRef<ScrollView>(null);
   const [newHistoryTitle, setNewHistoryTitle] = useState("");
-  const [newHistoryDescription, setNewHistoryDescription] = useState("");
+  const [newHistoryBody, setNewHistoryBody] = useState("");
   const [newHistoryMedia, setNewHistoryMedia] = useState<MediaItem[]>([]);
   const [showAddHistory, setShowAddHistory] = useState(false);
   const { t } = useLocalization();
@@ -154,18 +154,18 @@ export function ItemModal({
     const newEntry: HistoryEntry = {
       timestamp: new Date().toISOString(),
       title: newHistoryTitle.trim(),
-      description: newHistoryDescription.trim(),
+      body: newHistoryBody.trim(),
       media: newHistoryMedia,
     };
 
-    const updatedHistory = [...(item.history || []), newEntry];
-    onChangeItem({ ...item, history: updatedHistory });
+    const updatedJournal = [...(item.userJournal || []), newEntry];
+    onChangeItem({ ...item, userJournal: updatedJournal });
     if (onAddHistoryEntry && item.id) {
-      onAddHistoryEntry(String(item.id), updatedHistory);
+      onAddHistoryEntry(String(item.id), updatedJournal);
     }
 
     setNewHistoryTitle("");
-    setNewHistoryDescription("");
+    setNewHistoryBody("");
     setNewHistoryMedia([]);
     setShowAddHistory(false);
   };
@@ -181,7 +181,7 @@ export function ItemModal({
 
   const handleCancel = () => {
     setNewHistoryTitle("");
-    setNewHistoryDescription("");
+    setNewHistoryBody("");
     setNewHistoryMedia([]);
     setShowAddHistory(false);
     onCancel();
@@ -223,10 +223,10 @@ export function ItemModal({
   const historyMediaCount = newHistoryMedia.length;
 
   const getTitle = () => {
-    if (isViewMode) return item.name || t("viewItem");
+    if (isViewMode) return item.attributes?.name || t("viewItem");
     if (isEditMode) return t("editItem");
-    if (item.type === "area") return t("newArea");
-    if (item.type === "point") return t("newPoint");
+    if (item.placeType === "Place_Area") return t("newArea");
+    if (item.placeType === "Place_Point") return t("newPoint");
     return t("newPoint");
   };
 
@@ -246,7 +246,9 @@ export function ItemModal({
             {isViewMode ? (
               <View style={styles.viewField}>
                 <Text style={styles.viewLabel}>{t("name")}</Text>
-                <Text style={styles.viewValue}>{item.name || "-"}</Text>
+                <Text style={styles.viewValue}>
+                  {item.attributes?.name || "-"}
+                </Text>
               </View>
             ) : (
               <>
@@ -254,8 +256,13 @@ export function ItemModal({
                 <TextInput
                   style={styles.input}
                   placeholder={t("namePlaceholder")}
-                  value={item.name}
-                  onChangeText={(text) => onChangeItem({ ...item, name: text })}
+                  value={item.attributes?.name || ""}
+                  onChangeText={(text) =>
+                    onChangeItem({
+                      ...item,
+                      attributes: { ...item.attributes, name: text },
+                    })
+                  }
                 />
               </>
             )}
@@ -264,7 +271,9 @@ export function ItemModal({
             {isViewMode ? (
               <View style={styles.viewField}>
                 <Text style={styles.viewLabel}>{t("notes")}</Text>
-                <Text style={styles.viewValue}>{item.notes || "-"}</Text>
+                <Text style={styles.viewValue}>
+                  {item.attributes?.notes || "-"}
+                </Text>
               </View>
             ) : (
               <>
@@ -272,9 +281,12 @@ export function ItemModal({
                 <TextInput
                   style={[styles.input, styles.notesInput]}
                   placeholder={t("notesPlaceholder")}
-                  value={item.notes}
+                  value={item.attributes?.notes || ""}
                   onChangeText={(text) =>
-                    onChangeItem({ ...item, notes: text })
+                    onChangeItem({
+                      ...item,
+                      attributes: { ...item.attributes, notes: text },
+                    })
                   }
                   multiline
                   numberOfLines={2}
@@ -283,15 +295,17 @@ export function ItemModal({
             )}
 
             {/* Area info */}
-            {item.type === "area" && item.area && (
+            {item.placeType === "Place_Area" && item.attributes?.areaHa && (
               <View style={styles.viewField}>
                 <Text style={styles.viewLabel}>{t("area")}</Text>
-                <Text style={styles.viewValue}>{formatArea(item.area)}</Text>
+                <Text style={styles.viewValue}>
+                  {formatArea(item.attributes.areaHa * 10000)}
+                </Text>
               </View>
             )}
 
             {/* Color picker for areas */}
-            {item.type === "area" && !isViewMode && (
+            {item.placeType === "Place_Area" && !isViewMode && (
               <View style={styles.viewField}>
                 <Text style={styles.label}>{t("color")}</Text>
                 <View style={colorStyles.colorRow}>
@@ -301,11 +315,17 @@ export function ItemModal({
                       style={[
                         colorStyles.colorButton,
                         { backgroundColor: color.value },
-                        (item.color || "#00FF00") === color.value &&
+                        (item.attributes?.color || "#00FF00") === color.value &&
                           colorStyles.colorButtonSelected,
                       ]}
                       onPress={() =>
-                        onChangeItem({ ...item, color: color.value })
+                        onChangeItem({
+                          ...item,
+                          attributes: {
+                            ...item.attributes,
+                            color: color.value,
+                          },
+                        })
                       }
                     />
                   ))}
@@ -314,23 +334,27 @@ export function ItemModal({
             )}
 
             {/* Color display for areas in view mode */}
-            {item.type === "area" && isViewMode && item.color && (
-              <View style={styles.viewField}>
-                <Text style={styles.viewLabel}>{t("color")}</Text>
-                <View
-                  style={[
-                    colorStyles.colorPreview,
-                    { backgroundColor: item.color },
-                  ]}
-                />
-              </View>
-            )}
+            {item.placeType === "Place_Area" &&
+              isViewMode &&
+              item.attributes?.color && (
+                <View style={styles.viewField}>
+                  <Text style={styles.viewLabel}>{t("color")}</Text>
+                  <View
+                    style={[
+                      colorStyles.colorPreview,
+                      { backgroundColor: item.attributes.color },
+                    ]}
+                  />
+                </View>
+              )}
 
             {/* Created date - only in view mode */}
-            {isViewMode && item.created && (
+            {isViewMode && item.createdAt && (
               <View style={styles.viewField}>
                 <Text style={styles.viewLabel}>{t("created")}</Text>
-                <Text style={styles.viewValue}>{formatDate(item.created)}</Text>
+                <Text style={styles.viewValue}>
+                  {formatDate(item.createdAt)}
+                </Text>
               </View>
             )}
 
@@ -379,7 +403,9 @@ export function ItemModal({
             {(isViewMode || isEditMode) && (
               <View style={styles.historySection}>
                 <View style={styles.historySectionHeader}>
-                  <Text style={styles.historySectionTitle}>{t("history")}</Text>
+                  <Text style={styles.historySectionTitle}>
+                    {t("userJournal")}
+                  </Text>
                   {!showAddHistory && (
                     <TouchableOpacity
                       style={styles.addHistoryButton}
@@ -402,13 +428,13 @@ export function ItemModal({
                       value={newHistoryTitle}
                       onChangeText={setNewHistoryTitle}
                     />
-                    <Text style={styles.label}>{t("description")}</Text>
+                    <Text style={styles.label}>{t("body")}</Text>
                     <TextInput
                       style={[styles.input, styles.historyDescInput]}
-                      placeholder={t("description")}
+                      placeholder={t("body")}
                       placeholderTextColor="#777"
-                      value={newHistoryDescription}
-                      onChangeText={setNewHistoryDescription}
+                      value={newHistoryBody}
+                      onChangeText={setNewHistoryBody}
                       multiline
                       numberOfLines={2}
                     />
@@ -446,7 +472,7 @@ export function ItemModal({
                         onPress={() => {
                           setShowAddHistory(false);
                           setNewHistoryTitle("");
-                          setNewHistoryDescription("");
+                          setNewHistoryBody("");
                           setNewHistoryMedia([]);
                         }}
                       >
@@ -466,9 +492,9 @@ export function ItemModal({
                   </View>
                 )}
 
-                {item.history && item.history.length > 0 ? (
+                {item.userJournal && item.userJournal.length > 0 ? (
                   <View style={styles.historyList}>
-                    {[...item.history].reverse().map((entry, index) => (
+                    {[...item.userJournal].reverse().map((entry, index) => (
                       <View key={index} style={styles.historyEntry}>
                         <Text style={styles.historyTimestamp}>
                           {formatDate(entry.timestamp)}
@@ -476,9 +502,9 @@ export function ItemModal({
                         <Text style={styles.historyEntryTitle}>
                           {entry.title}
                         </Text>
-                        {entry.description ? (
+                        {entry.body ? (
                           <Text style={styles.historyDescription}>
-                            {entry.description}
+                            {entry.body}
                           </Text>
                         ) : null}
                         {entry.media && entry.media.length > 0 && (
@@ -489,7 +515,7 @@ export function ItemModal({
                   </View>
                 ) : (
                   <Text style={styles.noHistoryText}>
-                    {t("noHistoryEntries")}
+                    {t("noUserJournalEntries")}
                   </Text>
                 )}
               </View>

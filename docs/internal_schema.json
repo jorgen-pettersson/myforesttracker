@@ -1,0 +1,71 @@
+{
+  "schema": "myforesttracker.place.v1",
+  "place": {
+    "id": "8b48b0b7-7f3f-4b67-9e32-1a9fe0f7f5a1",
+    "placeType": "Place_Compartment",
+    "notes": "",
+    "source": {
+      "system": "forestand",
+      "sourceFile": "import_2026-03-02.xml",
+      "sourceIds": {
+        "sisId": "SIS_123456",
+        "localId": "PC_00042"
+      },
+      "importedAt": "2026-03-02T12:34:56+01:00"
+    },
+    "attributes": {
+      "site": {
+        "soilMoisture": { "code": "VT_03", "label": "Fuktig mark" },
+        "vegetationType": { "code": "VT_01", "label": "Blåbärstyp" }
+      },
+      "name": "Avdelning 42",
+      "areaHa": 3.27
+    },
+
+    "geometries": [
+      {
+        "id": "geom-1",
+        "role": "primary",
+        "geometry": {
+          "type": "MultiPolygon",
+          "coordinates": [[[ [0,0],[1,0],[1,1],[0,1],[0,0] ]]]
+        },
+        "crs": "EPSG:3006",
+        "bbox": [0, 0, 1, 1],
+        "quality": { "source": "forestand", "method": "import", "confidence": 0.9 }
+      }
+    ],
+
+    "relations": [
+      {
+        "type": "encloses",
+        "targetPlaceId": "b19d8e3a-7e28-41b4-a98f-e4efc8f2a6f0"
+      }
+    ],
+
+    "history": [
+      {
+        "type": "imported",
+        "at": "2026-03-02T12:34:56+01:00",
+        "actor": "system",
+        "details": { "sourceFile": "import_2026-03-02.xml" }
+      },
+      {
+        "type": "user_edit",
+        "at": "2026-03-02T13:10:00+01:00",
+        "actor": "user",
+        "details": { "field": "attributes.site.soilMoisture", "from": "VT_03", "to": "VT_02" }
+      }
+    ],
+
+    "media": [
+      {
+        "id": "m-1",
+        "type": "photo",
+        "uri": "s3://bucket/places/8b48.../photo1.jpg",
+        "createdAt": "2026-03-02T13:11:00+01:00",
+        "caption": "Södersluttning, fuktstråk"
+      }
+    ]
+  }
+}

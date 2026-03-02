@@ -9,9 +9,7 @@ import {
   errorCodes,
 } from "@react-native-documents/picker";
 import {
-  InventoryItem,
-  InventoryPoint,
-  InventoryArea,
+  Place,
   MediaItem,
   HistoryEntry,
   Coordinate,
@@ -19,6 +17,7 @@ import {
 import { useLocalization } from "../../../localization";
 import { convertForestandXmlToGeoJson } from "../services/forestandLocal";
 import { ParsedGeoJSON, flattenProperties } from "../types/GeoJson";
+import { normalizeInventoryData } from "../../../features/inventory/storage/inventoryStorage";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
 const IMPORT_DIR = `${RNFS.CachesDirectoryPath}/import`;
@@ -52,58 +51,40 @@ export function useImportExport() {
     await RNFS.mkdir(dir);
   };
 
-  // Convert items to GeoJSON format
-  const itemsToGeoJSON = (items: InventoryItem[]): object => {
-    const features = items.map((item) => {
-      // Merge original properties with our properties
-      const baseProps = {
-        fid: item.id,
-        name: item.name,
-        notes: item.notes,
-        visible: item.visible,
-        created: item.created,
-        mediaCount: item.media?.length || 0,
-        historyCount: item.history?.length || 0,
-      };
+  // Convert places to GeoJSON format
+  const placesToGeoJSON = (places: Place[]): object => {
+    const features = places
+      .map((place) => {
+        const geometry = place.geometries?.[0]?.geometry;
+        if (!geometry) {
+          return null;
+        }
 
-      // Include original imported properties, but let our values override
-      const mergedProps = item.properties
-        ? { ...item.properties, ...baseProps }
-        : baseProps;
+        const baseProps = {
+          placeId: place.id,
+          placeType: place.placeType,
+          name: place.attributes?.name,
+          notes: place.attributes?.notes,
+          color: place.attributes?.color,
+          visible: place.visible,
+          createdAt: place.createdAt,
+          areaHa: place.attributes?.areaHa,
+          mediaCount: place.media?.length || 0,
+          historyCount: place.userJournal?.length || 0,
+          source: place.source,
+        };
 
-      if (item.type === "point") {
+        const mergedProps = place.properties
+          ? { ...place.properties, ...baseProps }
+          : baseProps;
+
         return {
           type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: [item.coordinate.longitude, item.coordinate.latitude],
-          },
+          geometry,
           properties: mergedProps,
         };
-      } else {
-        // Area - Polygon
-        const coordinates = item.coordinates.map((c) => [
-          c.longitude,
-          c.latitude,
-        ]);
-        // Close the polygon by adding the first point at the end
-        if (coordinates.length > 0) {
-          coordinates.push(coordinates[0]);
-        }
-        return {
-          type: "Feature",
-          geometry: {
-            type: "Polygon",
-            coordinates: [coordinates],
-          },
-          properties: {
-            ...mergedProps,
-            area_sqm: item.area,
-            color: item.color,
-          },
-        };
-      }
-    });
+      })
+      .filter(Boolean);
 
     return {
       type: "FeatureCollection",
@@ -111,15 +92,15 @@ export function useImportExport() {
     };
   };
 
-  // Convert items to CSV format
-  const itemsToCSV = (items: InventoryItem[]): string => {
+  // Convert places to CSV format
+  const placesToCSV = (places: Place[]): string => {
     const headers = [
       "id",
-      "type",
+      "placeType",
       "name",
       "notes",
       "visible",
-      "created",
+      "createdAt",
       "latitude",
       "longitude",
       "area_sqm",
@@ -127,45 +108,63 @@ export function useImportExport() {
       "history_count",
     ];
 
-    const rows = items.map((item) => {
-      const lat =
-        item.type === "point"
-          ? item.coordinate.latitude
-          : item.coordinates[0]?.latitude || "";
-      const lng =
-        item.type === "point"
-          ? item.coordinate.longitude
-          : item.coordinates[0]?.longitude || "";
-      const area = item.type === "area" ? item.area?.toFixed(2) || "" : "";
+    const rows = places.map((place) => {
+      const geometry = place.geometries?.[0]?.geometry;
+      let lat: number | string = "";
+      let lng: number | string = "";
+
+      if (geometry?.type === "Point") {
+        const coords = geometry.coordinates as number[];
+        lng = coords[0];
+        lat = coords[1];
+      } else if (geometry?.type === "Polygon") {
+        const rings = geometry.coordinates as number[][][];
+        const first = rings[0]?.[0];
+        if (first) {
+          lng = first[0];
+          lat = first[1];
+        }
+      } else if (geometry?.type === "MultiPolygon") {
+        const polygons = geometry.coordinates as number[][][][];
+        const first = polygons[0]?.[0]?.[0];
+        if (first) {
+          lng = first[0];
+          lat = first[1];
+        }
+      }
+
+      const area = place.attributes?.areaHa
+        ? (place.attributes.areaHa * 10000).toFixed(2)
+        : "";
 
       return [
-        item.id,
-        item.type,
-        `"${(item.name || "").replace(/"/g, '""')}"`,
-        `"${(item.notes || "").replace(/"/g, '""')}"`,
-        item.visible,
-        item.created,
+        place.id,
+        place.placeType,
+        `"${(place.attributes?.name || "").replace(/"/g, '""')}"`,
+        `"${(place.attributes?.notes || "").replace(/"/g, '""')}"`,
+        place.visible,
+        place.createdAt,
         lat,
         lng,
         area,
-        item.media?.length || 0,
-        item.history?.length || 0,
+        place.media?.length || 0,
+        place.userJournal?.length || 0,
       ].join(",");
     });
 
     return [headers.join(","), ...rows].join("\n");
   };
 
-  // Collect all media files from items
-  const collectMediaFiles = (items: InventoryItem[]): MediaItem[] => {
+  // Collect all media files from places
+  const collectMediaFiles = (places: Place[]): MediaItem[] => {
     const allMedia: MediaItem[] = [];
 
-    for (const item of items) {
-      if (item.media) {
-        allMedia.push(...item.media);
+    for (const place of places) {
+      if (place.media) {
+        allMedia.push(...place.media);
       }
-      if (item.history) {
-        for (const entry of item.history) {
+      if (place.userJournal) {
+        for (const entry of place.userJournal) {
           if (entry.media) {
             allMedia.push(...entry.media);
           }
@@ -177,16 +176,16 @@ export function useImportExport() {
   };
 
   // Update media URIs to relative paths for export
-  const prepareItemsForExport = (items: InventoryItem[]): InventoryItem[] => {
-    return items.map((item) => ({
-      ...item,
+  const preparePlacesForExport = (places: Place[]): Place[] => {
+    return places.map((place) => ({
+      ...place,
       media:
-        item.media?.map((m) => ({
+        place.media?.map((m) => ({
           ...m,
           uri: `media/${m.id}.${m.type === "video" ? "mp4" : "jpg"}`,
         })) || [],
-      history:
-        item.history?.map((h) => ({
+      userJournal:
+        place.userJournal?.map((h) => ({
           ...h,
           media:
             h.media?.map((m) => ({
@@ -199,7 +198,7 @@ export function useImportExport() {
 
   // Export as ZIP bundle
   const exportData = async (
-    items: InventoryItem[],
+    places: Place[],
     format: "json" | "csv" | "geojson" | "all" = "all"
   ): Promise<boolean> => {
     try {
@@ -208,7 +207,7 @@ export function useImportExport() {
       await ensureDir(mediaDir);
 
       // Copy media files
-      const allMedia = collectMediaFiles(items);
+      const allMedia = collectMediaFiles(places);
       for (const media of allMedia) {
         const sourcePath = media.uri.replace("file://", "");
         const ext = media.type === "video" ? "mp4" : "jpg";
@@ -221,23 +220,27 @@ export function useImportExport() {
       }
 
       // Prepare items with relative media paths
-      const exportItems = prepareItemsForExport(items);
+      const exportPlaces = preparePlacesForExport(places);
 
       // Write JSON
       if (format === "json" || format === "all") {
-        const jsonData = JSON.stringify(exportItems, null, 2);
+        const jsonData = JSON.stringify(
+          { version: 2, places: exportPlaces },
+          null,
+          2
+        );
         await RNFS.writeFile(`${EXPORT_DIR}/data.json`, jsonData, "utf8");
       }
 
       // Write CSV
       if (format === "csv" || format === "all") {
-        const csvData = itemsToCSV(items);
+        const csvData = placesToCSV(places);
         await RNFS.writeFile(`${EXPORT_DIR}/data.csv`, csvData, "utf8");
       }
 
       // Write GeoJSON
       if (format === "geojson" || format === "all") {
-        const geoJsonData = JSON.stringify(itemsToGeoJSON(items), null, 2);
+        const geoJsonData = JSON.stringify(placesToGeoJSON(places), null, 2);
         await RNFS.writeFile(`${EXPORT_DIR}/data.geojson`, geoJsonData, "utf8");
       }
 
@@ -272,7 +275,7 @@ export function useImportExport() {
   };
 
   // Import from ZIP bundle
-  const importData = async (): Promise<InventoryItem[] | null> => {
+  const importData = async (): Promise<Place[] | null> => {
     try {
       // Pick ZIP file
       const result = await pick({
@@ -307,7 +310,9 @@ export function useImportExport() {
       }
 
       const jsonData = await RNFS.readFile(jsonPath, "utf8");
-      const importedItems: InventoryItem[] = JSON.parse(jsonData);
+      const importedPlaces: Place[] = normalizeInventoryData(
+        JSON.parse(jsonData)
+      );
 
       // Copy media files and update URIs
       const importMediaDir = `${IMPORT_DIR}/media`;
@@ -332,16 +337,16 @@ export function useImportExport() {
       };
 
       // Process all items and update media URIs
-      const processedItems: InventoryItem[] = [];
+      const processedPlaces: Place[] = [];
 
-      for (const item of importedItems) {
+      for (const place of importedPlaces) {
         const updatedMedia: MediaItem[] = [];
-        for (const m of item.media || []) {
+        for (const m of place.media || []) {
           updatedMedia.push(await updateMediaUri(m));
         }
 
         const updatedHistory: HistoryEntry[] = [];
-        for (const h of item.history || []) {
+        for (const h of place.userJournal || []) {
           const historyMedia: MediaItem[] = [];
           for (const m of h.media || []) {
             historyMedia.push(await updateMediaUri(m));
@@ -349,14 +354,14 @@ export function useImportExport() {
           updatedHistory.push({ ...h, media: historyMedia });
         }
 
-        processedItems.push({
-          ...item,
+        processedPlaces.push({
+          ...place,
           media: updatedMedia,
-          history: updatedHistory,
+          userJournal: updatedHistory,
         });
       }
 
-      return processedItems;
+      return processedPlaces;
     } catch (error: any) {
       if (
         isErrorWithCode(error) &&
@@ -544,7 +549,7 @@ export function useImportExport() {
     return coords;
   };
 
-  // Helper to process a polygon (with potential holes) into an InventoryArea
+  // Helper to process a polygon (with potential holes) into a Place
   const processPolygon = (
     rings: number[][][],
     baseId: string,
@@ -553,29 +558,18 @@ export function useImportExport() {
     props: any,
     now: string,
     suffix?: string
-  ): InventoryArea | null => {
+  ): Place | null => {
     if (!rings || rings.length === 0) {
       return null;
     }
 
-    // First ring is the outer boundary
     const outerCoords = ringToCoordinates(rings[0]);
     if (!outerCoords) {
       return null;
     }
 
-    // Remaining rings are holes
-    const holes: Coordinate[][] = [];
-    for (let i = 1; i < rings.length; i++) {
-      const holeCoords = ringToCoordinates(rings[i]);
-      if (holeCoords) {
-        holes.push(holeCoords);
-      }
-    }
-
     const flattened = flattenProperties(props);
 
-    // Get color from properties (support various common property names, including nested)
     const color =
       flattened.color ||
       flattened.Color ||
@@ -592,18 +586,31 @@ export function useImportExport() {
 
     return {
       id,
-      type: "area",
-      name: itemName,
-      notes,
+      placeType: "Place_Area",
+      source: {
+        system: "geojson",
+        importedAt: now,
+      },
+      attributes: {
+        name: itemName || undefined,
+        notes: notes || undefined,
+        areaHa: calculateArea(outerCoords) / 10000,
+        color,
+      },
+      geometries: [
+        {
+          geometry: {
+            type: "Polygon",
+            coordinates: rings,
+          },
+          crs: "EPSG:4326",
+        },
+      ],
       visible: true,
-      created: now,
-      coordinates: outerCoords,
-      holes: holes.length > 0 ? holes : undefined,
-      area: calculateArea(outerCoords),
-      history: [],
+      createdAt: now,
+      userJournal: [],
       media: [],
       properties: props,
-      color,
     };
   };
 
@@ -612,9 +619,9 @@ export function useImportExport() {
     features: any[],
     nameProperty: string,
     notesProperty: string
-  ): InventoryItem[] | null => {
+  ): Place[] | null => {
     const now = new Date().toISOString();
-    const items: InventoryItem[] = [];
+    const items: Place[] = [];
 
     for (const feature of features) {
       if (!feature.geometry) {
@@ -637,16 +644,26 @@ export function useImportExport() {
           : Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
       if (feature.geometry.type === "Point") {
-        const [longitude, latitude] = feature.geometry.coordinates;
-        const point: InventoryPoint = {
+        const point: Place = {
           id: baseId,
-          type: "point",
-          name,
-          notes,
+          placeType: "Place_Point",
+          source: {
+            system: "geojson",
+            importedAt: now,
+          },
+          attributes: {
+            name: name || undefined,
+            notes: notes || undefined,
+          },
+          geometries: [
+            {
+              geometry: feature.geometry,
+              crs: "EPSG:4326",
+            },
+          ],
           visible: true,
-          created: now,
-          coordinate: { latitude, longitude },
-          history: [],
+          createdAt: now,
+          userJournal: [],
           media: [],
           properties: props,
         };

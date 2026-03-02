@@ -18,39 +18,62 @@ export interface MediaItem {
   id: string;
   uri: string;
   type: "photo" | "video";
-  timestamp: string;
+  createdAt: string;
   thumbnailUri?: string;
+  caption?: string;
 }
 
 export interface HistoryEntry {
   timestamp: string;
   title: string;
-  description: string;
+  body: string;
   media: MediaItem[];
 }
 
-export interface InventoryItemBase {
-  id: UUID;
-  name: string;
-  notes: string;
-  visible: boolean;
-  created: string;
-  history: HistoryEntry[];
-  media: MediaItem[];
-  properties?: Record<string, any>;
+export type PlaceType = "Place_Point" | "Place_Area";
+
+export interface PlaceSource {
+  system: string;
+  sourceFile?: string;
+  sourceIds?: Record<string, string>;
+  importedAt?: string;
 }
 
-export interface InventoryPoint extends InventoryItemBase {
-  type: "point";
-  coordinate: Coordinate;
-}
-
-export interface InventoryArea extends InventoryItemBase {
-  type: "area";
-  coordinates: Coordinate[];
-  holes?: Coordinate[][];
-  area?: number;
+export interface PlaceAttributes {
+  name?: string;
+  notes?: string;
+  areaHa?: number;
+  site?: Record<string, { code?: string; label?: string }>;
   color?: string;
 }
 
-export type InventoryItem = InventoryPoint | InventoryArea;
+export interface PlaceGeometry {
+  id?: string;
+  geometry: GeoJSON.Geometry;
+  crs?: string;
+  bbox?: number[];
+  quality?: {
+    source?: string;
+    method?: string;
+    confidence?: number;
+  };
+}
+
+export interface PlaceRelation {
+  type: string;
+  targetPlaceId: string;
+}
+
+export interface Place {
+  id: UUID;
+  placeType: PlaceType;
+  source?: PlaceSource;
+  attributes?: PlaceAttributes;
+  geometries?: PlaceGeometry[];
+  relations?: PlaceRelation[];
+  userJournal?: HistoryEntry[];
+  media?: MediaItem[];
+  visible?: boolean;
+  createdAt?: string;
+  properties?: Record<string, any>;
+}

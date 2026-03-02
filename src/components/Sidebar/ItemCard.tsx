@@ -1,15 +1,15 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { InventoryItem } from "../../features/inventory";
+import { Place } from "../../features/inventory";
 import { itemCardStyles as styles } from "../../styles";
 import { formatArea } from "../../utils";
 
 interface ItemCardProps {
-  item: InventoryItem;
+  item: Place;
   onToggleVisibility: (id: string) => void;
   onDelete: (id: string) => void;
-  onView: (item: InventoryItem) => void;
-  onReposition: (item: InventoryItem) => void;
+  onView: (item: Place) => void;
+  onReposition: (item: Place) => void;
 }
 
 export function ItemCard({
@@ -27,9 +27,9 @@ export function ItemCard({
     >
       <View style={styles.itemHeader}>
         <Text style={styles.itemType}>
-          {item.type === "point" ? "📌" : "⬜"}
+          {item.placeType === "Place_Point" ? "📌" : "⬜"}
         </Text>
-        <Text style={styles.itemName}>{item.name}</Text>
+        <Text style={styles.itemName}>{item.attributes?.name || ""}</Text>
         <TouchableOpacity
           style={styles.visibilityButton}
           onPress={() => onToggleVisibility(item.id)}
@@ -40,10 +40,12 @@ export function ItemCard({
         </TouchableOpacity>
       </View>
       <Text style={styles.itemDetail}>
-        {new Date(item.created).toLocaleString()}
+        {item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}
       </Text>
-      {item.type === "area" && item.area && (
-        <Text style={styles.itemDetail}>Area: {formatArea(item.area)}</Text>
+      {item.placeType === "Place_Area" && item.attributes?.areaHa && (
+        <Text style={styles.itemDetail}>
+          Area: {formatArea(item.attributes.areaHa * 10000)}
+        </Text>
       )}
       <View style={styles.buttonRow}>
         <TouchableOpacity

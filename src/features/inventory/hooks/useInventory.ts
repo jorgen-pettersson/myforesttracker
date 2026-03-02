@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
-import { InventoryItem } from "../types";
+import { Place } from "../types";
 import { loadInventory, saveInventory } from "../storage/inventoryStorage";
 import {
   addItem as addItemService,
@@ -14,26 +14,26 @@ import {
 import { cleanupItemMedia } from "../services/mediaService";
 
 export function useInventory() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [places, setPlaces] = useState<Place[]>([]);
 
   useEffect(() => {
     const load = async () => {
       const loaded = await loadInventory();
-      setItems(loaded);
+      setPlaces(loaded);
     };
     load();
   }, []);
 
   useEffect(() => {
-    saveInventory(items);
-  }, [items]);
+    saveInventory(places);
+  }, [places]);
 
-  const addItem = (item: InventoryItem) => {
-    setItems((prev) => addItemService(prev, item));
+  const addItem = (place: Place) => {
+    setPlaces((prev) => addItemService(prev, place));
   };
 
-  const updateItem = (updatedItem: InventoryItem) => {
-    setItems((prev) => updateItemService(prev, updatedItem));
+  const updateItem = (updatedPlace: Place) => {
+    setPlaces((prev) => updateItemService(prev, updatedPlace));
   };
 
   const deleteItem = (id: string) => {
@@ -43,30 +43,30 @@ export function useInventory() {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          const itemToDelete = items.find((item) => item.id === id);
-          if (itemToDelete) {
-            await cleanupItemMedia(itemToDelete);
+          const placeToDelete = places.find((place) => place.id === id);
+          if (placeToDelete) {
+            await cleanupItemMedia(placeToDelete);
           }
-          setItems((prev) => removeItemService(prev, id));
+          setPlaces((prev) => removeItemService(prev, id));
         },
       },
     ]);
   };
 
   const toggleItemVisibility = (id: string) => {
-    setItems((prev) => toggleItemVisibilityService(prev, id));
+    setPlaces((prev) => toggleItemVisibilityService(prev, id));
   };
 
-  const importItems = (newItems: InventoryItem[]) => {
-    setItems((prev) => importItemsService(prev, newItems));
+  const importItems = (newPlaces: Place[]) => {
+    setPlaces((prev) => importItemsService(prev, newPlaces));
   };
 
-  const appendItems = (newItems: InventoryItem[]) => {
-    setItems((prev) => appendItemsService(prev, newItems));
+  const appendItems = (newPlaces: Place[]) => {
+    setPlaces((prev) => appendItemsService(prev, newPlaces));
   };
 
   return {
-    items,
+    places,
     addItem,
     updateItem,
     deleteItem,

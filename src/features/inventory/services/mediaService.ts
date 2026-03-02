@@ -1,8 +1,8 @@
 import RNFS from "react-native-fs";
-import { InventoryItem } from "../types";
+import { Place } from "../types";
 
-export const cleanupItemMedia = async (item: InventoryItem) => {
-  for (const media of item.media || []) {
+export const cleanupItemMedia = async (place: Place) => {
+  for (const media of place.media || []) {
     try {
       const filePath = media.uri.replace("file://", "");
       const exists = await RNFS.exists(filePath);
@@ -14,7 +14,7 @@ export const cleanupItemMedia = async (item: InventoryItem) => {
     }
   }
 
-  for (const entry of item.history || []) {
+  for (const entry of place.userJournal || []) {
     for (const media of entry.media || []) {
       try {
         const filePath = media.uri.replace("file://", "");

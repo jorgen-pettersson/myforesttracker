@@ -7,18 +7,18 @@ import {
   Pressable,
   Alert,
 } from "react-native";
-import { InventoryItem } from "../../features/inventory";
+import { Place } from "../../features/inventory";
 import { sidebarStyles as styles } from "../../styles";
 import { ItemCard } from "./ItemCard";
 import { useLocalization } from "../../localization";
 
 interface SidebarProps {
   visible: boolean;
-  items: InventoryItem[];
+  items: Place[];
   onToggleVisibility: (id: string) => void;
   onDelete: (id: string) => void;
-  onView: (item: InventoryItem) => void;
-  onReposition: (item: InventoryItem) => void;
+  onView: (item: Place) => void;
+  onReposition: (item: Place) => void;
   onExport: (format: "json" | "csv" | "geojson" | "all") => void;
   onImport: () => void;
   onClose: () => void;

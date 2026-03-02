@@ -2,8 +2,7 @@ import React, { useRef, useImperativeHandle, forwardRef } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from "react-native-maps";
 import {
-  InventoryItem,
-  InventoryArea,
+  Place,
   Region,
   Coordinate,
   DrawingMode,
@@ -148,13 +147,47 @@ export const getVisualCenter = (coords: Coordinate[]): Coordinate => {
 };
 
 // Format area in hectares
-const formatAreaHa = (areaSqm: number | undefined): string => {
-  if (!areaSqm) return "";
-  const ha = areaSqm / 10000;
-  if (ha >= 1) {
-    return `${ha.toFixed(2)} ha`;
+const formatAreaHa = (areaHa: number | undefined): string => {
+  if (!areaHa) return "";
+  if (areaHa >= 1) {
+    return `${areaHa.toFixed(2)} ha`;
   }
-  return `${(ha * 10000).toFixed(0)} m²`;
+  return `${(areaHa * 10000).toFixed(0)} m²`;
+};
+
+const getPrimaryGeometry = (place: Place): GeoJSON.Geometry | null => {
+  if (!place.geometries || place.geometries.length === 0) {
+    return null;
+  }
+  return place.geometries[0].geometry || null;
+};
+
+const toLatLng = (coord: number[]): Coordinate => ({
+  latitude: coord[1],
+  longitude: coord[0],
+});
+
+const getPolygonParts = (
+  geometry: GeoJSON.Geometry
+): {
+  outer: Coordinate[];
+  holes?: Coordinate[][];
+}[] => {
+  if (geometry.type === "Polygon") {
+    const rings = geometry.coordinates as number[][][];
+    const outer = rings[0]?.map(toLatLng) || [];
+    const holes = rings.slice(1).map((ring) => ring.map(toLatLng));
+    return [{ outer, holes: holes.length > 0 ? holes : undefined }];
+  }
+  if (geometry.type === "MultiPolygon") {
+    const polygons = geometry.coordinates as number[][][][];
+    return polygons.map((poly) => {
+      const outer = poly[0]?.map(toLatLng) || [];
+      const holes = poly.slice(1).map((ring) => ring.map(toLatLng));
+      return { outer, holes: holes.length > 0 ? holes : undefined };
+    });
+  }
+  return [];
 };
 
 // Convert hex color to rgba with opacity
@@ -195,14 +228,14 @@ interface InventoryMapProps {
   region: Region;
   onRegionChange: (region: Region) => void;
   mapType: MapType;
-  items: InventoryItem[];
+  items: Place[];
   areaPoints: Coordinate[];
   drawingMode: DrawingMode;
   repositionType?: "point" | "area";
   onConfirmLocation: () => void;
   onCompleteReposition?: () => void;
   onCancelReposition?: () => void;
-  onItemPress?: (item: InventoryItem) => void;
+  onItemPress?: (item: Place) => void;
 }
 
 export interface InventoryMapRef {
@@ -269,49 +302,69 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
           {items
             .filter((item) => item.visible !== false)
             .map((item) => {
-              if (item.type === "point") {
+              const geometry = getPrimaryGeometry(item);
+              if (!geometry) {
+                return null;
+              }
+
+              if (
+                item.placeType === "Place_Point" &&
+                geometry.type === "Point"
+              ) {
+                const coordinates = geometry.coordinates as number[];
+                const coordinate = toLatLng(coordinates);
                 return (
                   <Marker
                     key={item.id}
-                    coordinate={item.coordinate}
-                    title={item.name}
-                    description={item.notes}
+                    coordinate={coordinate}
+                    title={item.attributes?.name}
+                    description={item.attributes?.notes}
                     pinColor="green"
                     onCalloutPress={() => onItemPress?.(item)}
                   />
                 );
-              } else {
-                const areaItem = item as InventoryArea;
-                const areaColor = areaItem.color || DEFAULT_AREA_COLOR;
-                const labelPosition = getVisualCenter(areaItem.coordinates);
-                return (
-                  <React.Fragment key={areaItem.id}>
-                    <Polygon
-                      coordinates={areaItem.coordinates}
-                      holes={areaItem.holes}
-                      strokeColor="black"
-                      fillColor={hexToRgba(areaColor, 0.3)}
-                      strokeWidth={2}
-                      tappable
-                      onPress={() => onItemPress?.(areaItem)}
-                    />
-                    <Marker
-                      coordinate={labelPosition}
-                      anchor={{ x: 0.5, y: 0.5 }}
-                      onPress={() => onItemPress?.(areaItem)}
-                    >
-                      <View style={labelStyles.container}>
-                        <Text style={labelStyles.name} numberOfLines={1}>
-                          {areaItem.name}
-                        </Text>
-                        <Text style={labelStyles.area}>
-                          {formatAreaHa(areaItem.area)}
-                        </Text>
-                      </View>
-                    </Marker>
-                  </React.Fragment>
-                );
               }
+
+              if (item.placeType === "Place_Area") {
+                const parts = getPolygonParts(geometry);
+                const areaColor = item.attributes?.color || DEFAULT_AREA_COLOR;
+                return parts.map((part, index) => {
+                  if (part.outer.length === 0) {
+                    return null;
+                  }
+                  const labelPosition = getVisualCenter(part.outer);
+                  const key = `${item.id}-${index}`;
+                  return (
+                    <React.Fragment key={key}>
+                      <Polygon
+                        coordinates={part.outer}
+                        holes={part.holes}
+                        strokeColor="black"
+                        fillColor={hexToRgba(areaColor, 0.3)}
+                        strokeWidth={2}
+                        tappable
+                        onPress={() => onItemPress?.(item)}
+                      />
+                      <Marker
+                        coordinate={labelPosition}
+                        anchor={{ x: 0.5, y: 0.5 }}
+                        onPress={() => onItemPress?.(item)}
+                      >
+                        <View style={labelStyles.container}>
+                          <Text style={labelStyles.name} numberOfLines={1}>
+                            {item.attributes?.name}
+                          </Text>
+                          <Text style={labelStyles.area}>
+                            {formatAreaHa(item.attributes?.areaHa)}
+                          </Text>
+                        </View>
+                      </Marker>
+                    </React.Fragment>
+                  );
+                });
+              }
+
+              return null;
             })}
 
           {areaPoints.length > 0 && (

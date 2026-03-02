@@ -1,4 +1,4 @@
-import { Coordinate, InventoryItem } from "../types";
+import { Coordinate, Place } from "../types";
 
 export const calculateArea = (coords: Coordinate[]): number => {
   let area = 0;
@@ -10,49 +10,44 @@ export const calculateArea = (coords: Coordinate[]): number => {
   return Math.abs(area / 2) * 111320 * 111320;
 };
 
-export const addItem = (items: InventoryItem[], item: InventoryItem) => {
-  return [...items, item];
+export const addItem = (places: Place[], place: Place) => {
+  return [...places, place];
 };
 
-export const updateItem = (
-  items: InventoryItem[],
-  updatedItem: InventoryItem
-) => {
-  return items.map((item) => (item.id === updatedItem.id ? updatedItem : item));
-};
-
-export const removeItem = (items: InventoryItem[], id: string) => {
-  return items.filter((item) => item.id !== id);
-};
-
-export const toggleItemVisibility = (items: InventoryItem[], id: string) => {
-  return items.map((item) =>
-    item.id === id ? { ...item, visible: !item.visible } : item
+export const updateItem = (places: Place[], updatedPlace: Place) => {
+  return places.map((place) =>
+    place.id === updatedPlace.id ? updatedPlace : place
   );
 };
 
-export const importItems = (
-  _items: InventoryItem[],
-  newItems: InventoryItem[]
-) => {
-  return newItems;
+export const removeItem = (places: Place[], id: string) => {
+  return places.filter((place) => place.id !== id);
 };
 
-export const appendItems = (
-  items: InventoryItem[],
-  newItems: InventoryItem[]
-) => {
-  const result = [...items];
-  for (const newItem of newItems) {
-    const existingIndex = result.findIndex((item) => item.id === newItem.id);
+export const toggleItemVisibility = (places: Place[], id: string) => {
+  return places.map((place) =>
+    place.id === id
+      ? { ...place, visible: place.visible === false ? true : false }
+      : place
+  );
+};
+
+export const importItems = (_places: Place[], newPlaces: Place[]) => {
+  return newPlaces;
+};
+
+export const appendItems = (places: Place[], newPlaces: Place[]) => {
+  const result = [...places];
+  for (const newPlace of newPlaces) {
+    const existingIndex = result.findIndex((place) => place.id === newPlace.id);
     if (existingIndex >= 0) {
       result[existingIndex] = {
-        ...newItem,
-        history: result[existingIndex].history,
+        ...newPlace,
+        userJournal: result[existingIndex].userJournal,
         media: result[existingIndex].media,
       };
     } else {
-      result.push(newItem);
+      result.push(newPlace);
     }
   }
   return result;

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 import {
-  InventoryItem,
+  Place,
   Coordinate,
   DrawingMode,
   Region,
@@ -50,7 +50,7 @@ function AppContent() {
   });
   const { language, setLanguage, t } = useLocalization();
   const {
-    items,
+    places,
     addItem,
     updateItem,
     deleteItem,
@@ -72,11 +72,9 @@ function AppContent() {
   const [drawingMode, setDrawingMode] = useState<DrawingMode>("none");
   const [areaPoints, setAreaPoints] = useState<Coordinate[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [currentItem, setCurrentItem] = useState<Partial<InventoryItem>>({});
+  const [currentItem, setCurrentItem] = useState<Partial<Place>>({});
   const [modalMode, setModalMode] = useState<ModalMode>("create");
-  const [repositionItem, setRepositionItem] = useState<InventoryItem | null>(
-    null
-  );
+  const [repositionItem, setRepositionItem] = useState<Place | null>(null);
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -88,6 +86,59 @@ function AppContent() {
   const [geoJsonSuggestedName, setGeoJsonSuggestedName] = useState<
     string | undefined
   >();
+
+  const toGeoJsonPoint = (coordinate: Coordinate): GeoJSON.Point => ({
+    type: "Point",
+    coordinates: [coordinate.longitude, coordinate.latitude],
+  });
+
+  const toGeoJsonPolygon = (coordinates: Coordinate[]): GeoJSON.Polygon => {
+    const outer = coordinates.map((c) => [c.longitude, c.latitude]);
+    if (outer.length > 0) {
+      const [firstLng, firstLat] = outer[0];
+      const [lastLng, lastLat] = outer[outer.length - 1];
+      if (firstLng !== lastLng || firstLat !== lastLat) {
+        outer.push([firstLng, firstLat]);
+      }
+    }
+    return {
+      type: "Polygon",
+      coordinates: [outer],
+    };
+  };
+
+  const getPrimaryGeometry = (place: Place): GeoJSON.Geometry | null => {
+    if (!place.geometries || place.geometries.length === 0) {
+      return null;
+    }
+    return place.geometries[0].geometry || null;
+  };
+
+  const getCoordinatesFromGeometry = (
+    geometry: GeoJSON.Geometry
+  ): Coordinate[] => {
+    if (geometry.type === "Point") {
+      const coords = geometry.coordinates as number[];
+      return [{ latitude: coords[1], longitude: coords[0] }];
+    }
+    if (geometry.type === "Polygon") {
+      const rings = geometry.coordinates as number[][][];
+      return (rings[0] || []).map((coord) => ({
+        latitude: coord[1],
+        longitude: coord[0],
+      }));
+    }
+    if (geometry.type === "MultiPolygon") {
+      const polygons = geometry.coordinates as number[][][][];
+      return polygons.flatMap((poly) =>
+        (poly[0] || []).map((coord) => ({
+          latitude: coord[1],
+          longitude: coord[0],
+        }))
+      );
+    }
+    return [];
+  };
 
   const screenWidth = Dimensions.get("window").width;
 
@@ -139,8 +190,16 @@ function AppContent() {
     };
 
     if (drawingMode === "reposition" && repositionItem) {
-      if (repositionItem.type === "point") {
-        updateItem({ ...repositionItem, coordinate });
+      if (repositionItem.placeType === "Place_Point") {
+        updateItem({
+          ...repositionItem,
+          geometries: [
+            {
+              geometry: toGeoJsonPoint(coordinate),
+              crs: "EPSG:4326",
+            },
+          ],
+        });
         setRepositionItem(null);
         setDrawingMode("none");
       } else {
@@ -151,15 +210,27 @@ function AppContent() {
     }
 
     if (drawingMode === "point") {
+      const now = new Date().toISOString();
       setCurrentItem({
         id: Date.now().toString(),
-        type: "point",
-        coordinate,
-        name: "",
-        notes: "",
+        placeType: "Place_Point",
+        source: {
+          system: "internal",
+          importedAt: now,
+        },
+        attributes: {
+          name: "",
+          notes: "",
+        },
+        geometries: [
+          {
+            geometry: toGeoJsonPoint(coordinate),
+            crs: "EPSG:4326",
+          },
+        ],
         visible: true,
-        created: new Date().toISOString(),
-        history: [],
+        createdAt: now,
+        userJournal: [],
         media: [],
       });
       setModalVisible(true);
@@ -180,33 +251,45 @@ function AppContent() {
     }
 
     const area = calculateArea(areaPoints);
+    const now = new Date().toISOString();
     setCurrentItem({
       id: Date.now().toString(),
-      type: "area",
-      coordinates: areaPoints,
-      name: "",
-      notes: "",
-      area,
+      placeType: "Place_Area",
+      source: {
+        system: "internal",
+        importedAt: now,
+      },
+      attributes: {
+        name: "",
+        notes: "",
+        areaHa: area / 10000,
+        color: "#00FF00",
+      },
+      geometries: [
+        {
+          geometry: toGeoJsonPolygon(areaPoints),
+          crs: "EPSG:4326",
+        },
+      ],
       visible: true,
-      created: new Date().toISOString(),
-      history: [],
+      createdAt: now,
+      userJournal: [],
       media: [],
-      color: "#00FF00", // Default green
     });
     setModalVisible(true);
     setDrawingMode("none");
   };
 
   const saveItem = () => {
-    if (!currentItem.name) {
+    if (!currentItem.attributes?.name) {
       Alert.alert(t("error"), t("nameRequired"));
       return;
     }
 
     if (modalMode === "edit") {
-      updateItem(currentItem as InventoryItem);
+      updateItem(currentItem as Place);
     } else {
-      addItem(currentItem as InventoryItem);
+      addItem(currentItem as Place);
     }
     setModalVisible(false);
     setCurrentItem({});
@@ -221,27 +304,36 @@ function AppContent() {
     setModalMode("create");
   };
 
-  const handleView = (item: InventoryItem) => {
+  const handleView = (item: Place) => {
     // Close sidebar first
     setSidebarVisible(false);
     const currentRegion = region;
-    if (item.type === "point") {
+    const geometry = getPrimaryGeometry(item);
+    if (
+      geometry &&
+      item.placeType === "Place_Point" &&
+      geometry.type === "Point"
+    ) {
+      const coords = geometry.coordinates as number[];
       const targetRegion: Region = {
-        latitude: item.coordinate.latitude,
-        longitude: item.coordinate.longitude,
+        latitude: coords[1],
+        longitude: coords[0],
         latitudeDelta: currentRegion.latitudeDelta,
         longitudeDelta: currentRegion.longitudeDelta,
       };
       mapRef.current?.animateToRegion(targetRegion, 300);
-    } else if (item.type === "area" && item.coordinates.length > 0) {
-      const { width, height } = Dimensions.get("window");
-      const edgePadding = {
-        top: height * 0.1,
-        right: width * 0.1,
-        bottom: height * 0.1,
-        left: width * 0.1,
-      };
-      mapRef.current?.fitToCoordinates(item.coordinates, edgePadding, true);
+    } else if (geometry && item.placeType === "Place_Area") {
+      const coordinates = getCoordinatesFromGeometry(geometry);
+      if (coordinates.length > 0) {
+        const { width, height } = Dimensions.get("window");
+        const edgePadding = {
+          top: height * 0.1,
+          right: width * 0.1,
+          bottom: height * 0.1,
+          left: width * 0.1,
+        };
+        mapRef.current?.fitToCoordinates(coordinates, edgePadding, true);
+      }
     }
 
     setCurrentItem(item);
@@ -257,23 +349,35 @@ function AppContent() {
     setRegion(nextRegion);
   };
 
-  const handleReposition = (item: InventoryItem) => {
+  const handleReposition = (item: Place) => {
     setRepositionItem(item);
     setDrawingMode("reposition");
     setSidebarVisible(false);
-    if (item.type === "area") {
+    if (item.placeType === "Place_Area") {
       setAreaPoints([]);
     }
   };
 
   const completeReposition = () => {
-    if (repositionItem && repositionItem.type === "area") {
+    if (repositionItem && repositionItem.placeType === "Place_Area") {
       if (areaPoints.length < 3) {
         Alert.alert(t("error"), t("areaMinPoints"));
         return;
       }
       const area = calculateArea(areaPoints);
-      updateItem({ ...repositionItem, coordinates: areaPoints, area });
+      updateItem({
+        ...repositionItem,
+        geometries: [
+          {
+            geometry: toGeoJsonPolygon(areaPoints),
+            crs: "EPSG:4326",
+          },
+        ],
+        attributes: {
+          ...repositionItem.attributes,
+          areaHa: area / 10000,
+        },
+      });
     }
     setRepositionItem(null);
     setDrawingMode("none");
@@ -292,7 +396,7 @@ function AppContent() {
   };
 
   const handleExport = async (format: "json" | "csv" | "geojson" | "all") => {
-    await exportData(items, format);
+    await exportData(places, format);
   };
 
   const handleImport = async () => {
@@ -369,11 +473,11 @@ function AppContent() {
   };
 
   const handleAddHistoryEntry = (itemId: string, history: HistoryEntry[]) => {
-    const existingItem = items.find((entry) => entry.id === itemId);
+    const existingItem = places.find((entry) => entry.id === itemId);
     if (!existingItem) {
       return;
     }
-    updateItem({ ...existingItem, history });
+    updateItem({ ...existingItem, userJournal: history });
   };
 
   if (!isLoaded) {
@@ -393,10 +497,16 @@ function AppContent() {
         region={region}
         onRegionChange={handleRegionChange}
         mapType={mapType}
-        items={items}
+        items={places}
         areaPoints={areaPoints}
         drawingMode={drawingMode}
-        repositionType={repositionItem?.type}
+        repositionType={
+          repositionItem?.placeType === "Place_Point"
+            ? "point"
+            : repositionItem?.placeType === "Place_Area"
+            ? "area"
+            : undefined
+        }
         onConfirmLocation={confirmLocation}
         onCompleteReposition={completeReposition}
         onCancelReposition={cancelReposition}
@@ -426,7 +536,7 @@ function AppContent() {
 
       <Sidebar
         visible={sidebarVisible}
-        items={items}
+        items={places}
         onToggleVisibility={toggleItemVisibility}
         onDelete={deleteItem}
         onView={handleView}

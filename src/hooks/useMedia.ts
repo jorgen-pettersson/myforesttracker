@@ -102,7 +102,7 @@ export function useMedia() {
             id,
             uri: `file://${destPath}`,
             type: isVideo ? "video" : "photo",
-            timestamp: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
           };
 
           resolve(mediaItem);
