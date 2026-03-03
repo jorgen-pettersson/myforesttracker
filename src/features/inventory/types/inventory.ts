@@ -45,6 +45,7 @@ export interface PlaceAttributes {
   areaHa?: number;
   site?: Record<string, { code?: string; label?: string }>;
   color?: string;
+  parentPlaceId?: string;
 }
 
 export interface PlaceGeometry {

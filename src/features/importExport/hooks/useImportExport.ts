@@ -702,6 +702,29 @@ export function useImportExport() {
       return null;
     }
 
+    const forestandIdToInternalId = new Map<string, string>();
+    for (const place of items) {
+      const forestandPlaceId = place.properties?.forestand?.placeId;
+      if (forestandPlaceId) {
+        forestandIdToInternalId.set(String(forestandPlaceId), place.id);
+      }
+    }
+
+    for (const place of items) {
+      const forestandParentId = place.properties?.forestand?.parentPlaceId;
+      if (forestandParentId) {
+        const internalParentId = forestandIdToInternalId.get(
+          String(forestandParentId)
+        );
+        if (internalParentId) {
+          place.attributes = {
+            ...place.attributes,
+            parentPlaceId: internalParentId,
+          };
+        }
+      }
+    }
+
     return items;
   };
 
