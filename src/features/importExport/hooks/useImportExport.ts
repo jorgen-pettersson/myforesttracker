@@ -618,10 +618,65 @@ export function useImportExport() {
   const processGeoJSON = (
     features: any[],
     nameProperty: string,
-    notesProperty: string
+    notesProperty: string,
+    existingPlaces: Place[] = []
   ): Place[] | null => {
     const now = new Date().toISOString();
     const items: Place[] = [];
+
+    const getExternalIdFromProps = (props: any): string | undefined => {
+      const placeId = props?.placeId;
+      if (placeId != null) {
+        return String(placeId);
+      }
+      const forestandPlaceId = props?.forestand?.placeId;
+      if (forestandPlaceId != null) {
+        return String(forestandPlaceId);
+      }
+      const fid = props?.fid;
+      if (fid != null) {
+        return String(fid);
+      }
+      return undefined;
+    };
+
+    const existingByExternalId = new Map<string, Place>();
+    for (const place of existingPlaces) {
+      const externalId = getExternalIdFromProps(place.properties || {});
+      if (externalId) {
+        existingByExternalId.set(externalId, place);
+      }
+      if (!existingByExternalId.has(place.id)) {
+        existingByExternalId.set(place.id, place);
+      }
+    }
+
+    const mergeAttributes = (
+      existing: Place["attributes"],
+      incoming: Place["attributes"]
+    ) => {
+      return {
+        ...existing,
+        ...Object.fromEntries(
+          Object.entries(incoming || {}).filter(
+            ([, value]) => value !== undefined
+          )
+        ),
+      };
+    };
+
+    const mergeDuplicate = (existing: Place, incoming: Place): Place => {
+      return {
+        ...incoming,
+        id: existing.id,
+        attributes: mergeAttributes(existing.attributes, incoming.attributes),
+        userJournal: existing.userJournal,
+        media: existing.media,
+        createdAt: existing.createdAt || incoming.createdAt,
+        visible: existing.visible,
+        source: existing.source || incoming.source,
+      };
+    };
 
     for (const feature of features) {
       if (!feature.geometry) {
@@ -629,6 +684,7 @@ export function useImportExport() {
       }
 
       const props = feature.properties || {};
+      const externalId = getExternalIdFromProps(props);
       // Support dot-notation for nested properties
       const name = nameProperty
         ? String(getNestedValue(props, nameProperty) || "")
@@ -638,10 +694,14 @@ export function useImportExport() {
         : "";
 
       // Use fid as unique id if it exists, otherwise generate one
-      const baseId =
-        props.fid != null
-          ? String(props.fid)
-          : Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const existingPlace = externalId
+        ? existingByExternalId.get(externalId)
+        : undefined;
+      const baseId = existingPlace
+        ? existingPlace.id
+        : props.fid != null
+        ? String(props.fid)
+        : Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
       if (feature.geometry.type === "Point") {
         const point: Place = {
@@ -667,13 +727,17 @@ export function useImportExport() {
           media: [],
           properties: props,
         };
-        items.push(point);
+        items.push(
+          existingPlace ? mergeDuplicate(existingPlace, point) : point
+        );
       } else if (feature.geometry.type === "Polygon") {
         // Polygon: all rings (outer + holes)
         const rings = feature.geometry.coordinates;
         const areaItem = processPolygon(rings, baseId, name, notes, props, now);
         if (areaItem) {
-          items.push(areaItem);
+          items.push(
+            existingPlace ? mergeDuplicate(existingPlace, areaItem) : areaItem
+          );
         }
       } else if (feature.geometry.type === "MultiPolygon") {
         // MultiPolygon: create separate items for each polygon (with their holes)
@@ -691,7 +755,11 @@ export function useImportExport() {
             suffix
           );
           if (areaItem) {
-            items.push(areaItem);
+            items.push(
+              i === 0 && existingPlace
+                ? mergeDuplicate(existingPlace, areaItem)
+                : areaItem
+            );
           }
         }
       }

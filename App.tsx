@@ -114,6 +114,196 @@ function AppContent() {
     return place.geometries[0].geometry || null;
   };
 
+  const normalizeRing = (ring: number[][]) => {
+    if (ring.length < 2) {
+      return ring;
+    }
+    const [firstLng, firstLat] = ring[0];
+    const [lastLng, lastLat] = ring[ring.length - 1];
+    if (firstLng === lastLng && firstLat === lastLat) {
+      return ring.slice(0, -1);
+    }
+    return ring;
+  };
+
+  const isPointOnSegment = (point: Coordinate, a: number[], b: number[]) => {
+    const px = point.longitude;
+    const py = point.latitude;
+    const ax = a[0];
+    const ay = a[1];
+    const bx = b[0];
+    const by = b[1];
+
+    const cross = (px - ax) * (by - ay) - (py - ay) * (bx - ax);
+    if (Math.abs(cross) > 1e-12) {
+      return false;
+    }
+
+    const dot = (px - ax) * (bx - ax) + (py - ay) * (by - ay);
+    if (dot < 0) {
+      return false;
+    }
+
+    const lenSq = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+    return dot <= lenSq;
+  };
+
+  const pointInRing = (point: Coordinate, ring: number[][]) => {
+    const normalized = normalizeRing(ring);
+    if (normalized.length < 3) {
+      return false;
+    }
+
+    let inside = false;
+    for (let i = 0, j = normalized.length - 1; i < normalized.length; j = i++) {
+      const xi = normalized[i][0];
+      const yi = normalized[i][1];
+      const xj = normalized[j][0];
+      const yj = normalized[j][1];
+
+      if (isPointOnSegment(point, normalized[j], normalized[i])) {
+        return true;
+      }
+
+      const intersect =
+        yi > point.latitude !== yj > point.latitude &&
+        point.longitude < ((xj - xi) * (point.latitude - yi)) / (yj - yi) + xi;
+      if (intersect) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
+  };
+
+  const pointInPolygon = (point: Coordinate, rings: number[][][]) => {
+    if (rings.length === 0) {
+      return false;
+    }
+    const outer = rings[0];
+    if (!pointInRing(point, outer)) {
+      return false;
+    }
+    for (let i = 1; i < rings.length; i++) {
+      if (pointInRing(point, rings[i])) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const placeContainsPoint = (place: Place, point: Coordinate) => {
+    const geometry = getPrimaryGeometry(place);
+    if (!geometry) {
+      return false;
+    }
+
+    if (geometry.type === "Polygon") {
+      return pointInPolygon(point, geometry.coordinates as number[][][]);
+    }
+
+    if (geometry.type === "MultiPolygon") {
+      const polygons = geometry.coordinates as number[][][][];
+      return polygons.some((rings) => pointInPolygon(point, rings));
+    }
+
+    return false;
+  };
+
+  const placeContainsPolygon = (place: Place, polygon: Coordinate[]) => {
+    if (polygon.length < 3) {
+      return false;
+    }
+    const geometry = getPrimaryGeometry(place);
+    if (!geometry) {
+      return false;
+    }
+
+    const ringsToCheck = polygon.map((coord) => coord);
+
+    const isContainedByPolygon = (rings: number[][][]) => {
+      return ringsToCheck.every((point) => pointInPolygon(point, rings));
+    };
+
+    if (geometry.type === "Polygon") {
+      return isContainedByPolygon(geometry.coordinates as number[][][]);
+    }
+
+    if (geometry.type === "MultiPolygon") {
+      const polygons = geometry.coordinates as number[][][][];
+      return polygons.some((rings) => isContainedByPolygon(rings));
+    }
+
+    return false;
+  };
+
+  const getPlaceAreaSqm = (place: Place) => {
+    if (place.attributes?.areaHa) {
+      return place.attributes.areaHa * 10000;
+    }
+    const geometry = getPrimaryGeometry(place);
+    if (!geometry) {
+      return 0;
+    }
+
+    const sumPolygonArea = (rings: number[][][]) => {
+      if (rings.length === 0) {
+        return 0;
+      }
+      const outer = normalizeRing(rings[0]);
+      const coords = outer.map((coord) => ({
+        latitude: coord[1],
+        longitude: coord[0],
+      }));
+      return calculateArea(coords);
+    };
+
+    if (geometry.type === "Polygon") {
+      return sumPolygonArea(geometry.coordinates as number[][][]);
+    }
+
+    if (geometry.type === "MultiPolygon") {
+      const polygons = geometry.coordinates as number[][][][];
+      return polygons.reduce((sum, rings) => sum + sumPolygonArea(rings), 0);
+    }
+
+    return 0;
+  };
+
+  const findParentForPoint = (point: Coordinate) => {
+    let selected: { id: string; area: number } | null = null;
+    for (const place of places) {
+      if (place.placeType !== "Place_Area") {
+        continue;
+      }
+      if (!placeContainsPoint(place, point)) {
+        continue;
+      }
+      const area = getPlaceAreaSqm(place);
+      if (!selected || (area > 0 && area < selected.area)) {
+        selected = { id: place.id, area };
+      }
+    }
+    return selected?.id;
+  };
+
+  const findParentForArea = (polygon: Coordinate[]) => {
+    let selected: { id: string; area: number } | null = null;
+    for (const place of places) {
+      if (place.placeType !== "Place_Area") {
+        continue;
+      }
+      if (!placeContainsPolygon(place, polygon)) {
+        continue;
+      }
+      const area = getPlaceAreaSqm(place);
+      if (!selected || (area > 0 && area < selected.area)) {
+        selected = { id: place.id, area };
+      }
+    }
+    return selected?.id;
+  };
+
   const getCoordinatesFromGeometry = (
     geometry: GeoJSON.Geometry
   ): Coordinate[] => {
@@ -211,6 +401,7 @@ function AppContent() {
 
     if (drawingMode === "point") {
       const now = new Date().toISOString();
+      const parentPlaceId = findParentForPoint(coordinate);
       setCurrentItem({
         id: Date.now().toString(),
         placeType: "Place_Point",
@@ -221,6 +412,7 @@ function AppContent() {
         attributes: {
           name: "",
           notes: "",
+          parentPlaceId,
         },
         geometries: [
           {
@@ -252,6 +444,7 @@ function AppContent() {
 
     const area = calculateArea(areaPoints);
     const now = new Date().toISOString();
+    const parentPlaceId = findParentForArea(areaPoints);
     setCurrentItem({
       id: Date.now().toString(),
       placeType: "Place_Area",
@@ -264,6 +457,7 @@ function AppContent() {
         notes: "",
         areaHa: area / 10000,
         color: "#00FF00",
+        parentPlaceId,
       },
       geometries: [
         {
@@ -450,7 +644,8 @@ function AppContent() {
     const importedItems = processGeoJSON(
       geoJsonFeatures,
       nameProperty,
-      notesProperty
+      notesProperty,
+      places
     );
     if (importedItems) {
       appendItems(importedItems);
