@@ -18,6 +18,7 @@ import { useLocalization } from "../../../localization";
 import { convertForestandXmlToGeoJson } from "../services/forestandLocal";
 import { ParsedGeoJSON, flattenProperties } from "../types/GeoJson";
 import { normalizeInventoryData } from "../../../features/inventory/storage/inventoryStorage";
+import forestandSiteDefaultMapping from "../config/forestandSiteDefaultMapping.json";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
 const IMPORT_DIR = `${RNFS.CachesDirectoryPath}/import`;
@@ -36,6 +37,55 @@ const calculateArea = (coords: Coordinate[]): number => {
 
 export function useImportExport() {
   const { t } = useLocalization();
+  const siteMapping = forestandSiteDefaultMapping as Record<
+    string,
+    {
+      codeType?: string | null;
+      attributeName?: string | null;
+      codes?: Record<
+        string,
+        { label?: string | null; internal?: { code?: string; label?: string } }
+      >;
+    }
+  >;
+  const buildInternalAttributesFromSite = (site: any) => {
+    if (!site || typeof site !== "object") {
+      return {};
+    }
+    const internalAttributes: Record<
+      string,
+      { code: string; label: string | null }
+    > = {};
+    for (const [obsName, value] of Object.entries(site)) {
+      if (obsName === "ObsS_SIS") {
+        continue;
+      }
+      if (!value || typeof value !== "object") {
+        continue;
+      }
+      const code = (value as any).code;
+      const label = (value as any).label ?? null;
+      if (!code) {
+        continue;
+      }
+
+      const mapping = siteMapping[obsName];
+      const attributeName =
+        mapping?.attributeName ||
+        (obsName.startsWith("ObsS_") ? obsName.slice(5) : obsName);
+
+      const mappedCodeEntry = mapping?.codes?.[String(code)];
+      const internal = mappedCodeEntry?.internal;
+      const finalCode = internal?.code ?? String(code);
+      const finalLabel = internal?.label ?? mappedCodeEntry?.label ?? label;
+
+      internalAttributes[attributeName] = {
+        code: finalCode,
+        label: finalLabel ?? null,
+      };
+    }
+    return internalAttributes;
+  };
   const ensureDir = async (dir: string) => {
     const exists = await RNFS.exists(dir);
     if (!exists) {
@@ -704,6 +754,9 @@ export function useImportExport() {
         : Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
       if (feature.geometry.type === "Point") {
+        const internalAttributes = buildInternalAttributesFromSite(
+          props?.forestand?.site
+        );
         const point: Place = {
           id: baseId,
           placeType: "Place_Point",
@@ -714,6 +767,7 @@ export function useImportExport() {
           attributes: {
             name: name || undefined,
             notes: notes || undefined,
+            ...internalAttributes,
           },
           geometries: [
             {
@@ -735,33 +789,51 @@ export function useImportExport() {
         const rings = feature.geometry.coordinates;
         const areaItem = processPolygon(rings, baseId, name, notes, props, now);
         if (areaItem) {
+          const internalAttributes = buildInternalAttributesFromSite(
+            props?.forestand?.site
+          );
+          areaItem.attributes = {
+            ...areaItem.attributes,
+            ...internalAttributes,
+          };
           items.push(
             existingPlace ? mergeDuplicate(existingPlace, areaItem) : areaItem
           );
         }
       } else if (feature.geometry.type === "MultiPolygon") {
-        // MultiPolygon: create separate items for each polygon (with their holes)
-        const polygons = feature.geometry.coordinates;
-        for (let i = 0; i < polygons.length; i++) {
-          const rings = polygons[i];
-          const suffix = polygons.length > 1 ? String(i + 1) : undefined;
-          const areaItem = processPolygon(
-            rings,
-            baseId,
-            name,
-            notes,
-            props,
-            now,
-            suffix
-          );
-          if (areaItem) {
-            items.push(
-              i === 0 && existingPlace
-                ? mergeDuplicate(existingPlace, areaItem)
-                : areaItem
-            );
-          }
-        }
+        const areaItem: Place = {
+          id: baseId,
+          placeType: "Place_Area",
+          source: {
+            system: "geojson",
+            importedAt: now,
+          },
+          attributes: {
+            name: name || undefined,
+            notes: notes || undefined,
+          },
+          geometries: [
+            {
+              geometry: feature.geometry,
+              crs: "EPSG:4326",
+            },
+          ],
+          visible: true,
+          createdAt: now,
+          userJournal: [],
+          media: [],
+          properties: props,
+        };
+        const internalAttributes = buildInternalAttributesFromSite(
+          props?.forestand?.site
+        );
+        areaItem.attributes = {
+          ...areaItem.attributes,
+          ...internalAttributes,
+        };
+        items.push(
+          existingPlace ? mergeDuplicate(existingPlace, areaItem) : areaItem
+        );
       }
     }
 

@@ -2,6 +2,7 @@ import "react-native-get-random-values";
 import proj4 from "proj4";
 import { XMLParser } from "fast-xml-parser";
 import { v4 as uuidv4 } from "uuid";
+import forestandSiteDefaultMapping from "../config/forestandSiteDefaultMapping.json";
 
 const EPSG_4326 = "EPSG:4326";
 const DEFAULT_SOURCE_CRS = "EPSG:3006";
@@ -21,6 +22,27 @@ const parser = new XMLParser({
   parseTagValue: false,
   parseAttributeValue: false,
 });
+
+const siteMapping = forestandSiteDefaultMapping as Record<
+  string,
+  {
+    codeType?: string | null;
+    attributeName?: string | null;
+    codes?: Record<string, { label?: string | null }>;
+  }
+>;
+
+const resolveSiteLabel = (obsName: string, code: string) => {
+  const entry = siteMapping[obsName];
+  if (!entry || !entry.codes) {
+    return null;
+  }
+  const codeEntry = entry.codes[code];
+  if (!codeEntry) {
+    return null;
+  }
+  return codeEntry.label ?? null;
+};
 
 const ensureArray = <T>(value: T | T[] | undefined | null): T[] => {
   if (!value) {
@@ -272,6 +294,118 @@ const collectGeometryMemberIds = (node: any, ids: string[] = []): string[] => {
   return ids;
 };
 
+const getObsElement = (obsNode: any) => {
+  if (!obsNode || typeof obsNode !== "object") {
+    return null;
+  }
+  for (const key of Object.keys(obsNode)) {
+    if (key.startsWith("ObsS_")) {
+      const value = obsNode[key];
+      const element = Array.isArray(value) ? value[0] : value;
+      return { name: key, node: element };
+    }
+  }
+  return null;
+};
+
+const extractObsResult = (obsName: string, obsNode: any) => {
+  const resultNode = obsNode?.result;
+  if (!resultNode) {
+    return null;
+  }
+
+  if (obsName === "ObsS_ManagementClass") {
+    const managementClass = resultNode?.ManagementClass;
+    const classValue = managementClass?.class;
+    const code = getText(classValue) || getText(managementClass);
+    if (!code) {
+      return null;
+    }
+    return { code, label: resolveSiteLabel(obsName, code) };
+  }
+
+  if (obsName === "ObsS_SIS") {
+    const resultValue = getText(resultNode);
+    const result = resultValue
+      ? {
+          code: resultValue,
+          label: resolveSiteLabel(obsName, resultValue),
+          uom: getAttr(resultNode, "uom") || undefined,
+        }
+      : null;
+
+    const specNode = obsNode?.spec?.SiteIndexSpec;
+    const age = getText(specNode?.age);
+    const species = getText(specNode?.species);
+    const spec: Record<string, { code: string; label: string | null }> = {};
+    if (age) {
+      spec.age = { code: age, label: null };
+    }
+    if (species) {
+      spec.species = { code: species, label: null };
+    }
+
+    const output: Record<string, any> = {};
+    if (result) {
+      output.result = result;
+    }
+    if (Object.keys(spec).length > 0) {
+      output.spec = spec;
+    }
+    return Object.keys(output).length > 0 ? output : null;
+  }
+
+  const code = getText(resultNode);
+  if (!code) {
+    return null;
+  }
+
+  const result: { code: string; label: string | null; uom?: string } = {
+    code,
+    label: resolveSiteLabel(obsName, code),
+  };
+  const uom = getAttr(resultNode, "uom");
+  if (uom) {
+    result.uom = uom;
+  }
+  return result;
+};
+
+const extractObjectSite = (place: any) => {
+  const objectSites = findAllByName(place, "Object_Site");
+  if (objectSites.length === 0) {
+    return null;
+  }
+
+  const site: Record<string, any> = {};
+  let objectSiteId: string | null = null;
+
+  for (const objectSite of objectSites) {
+    const obsNodes = getDirectChildren(objectSite, "obs");
+    for (const obsNode of obsNodes) {
+      const obsElement = getObsElement(obsNode);
+      if (!obsElement) {
+        continue;
+      }
+      const extracted = extractObsResult(obsElement.name, obsElement.node);
+      if (extracted) {
+        site[obsElement.name] = extracted;
+      }
+    }
+
+    const gmlId = getAttr(objectSite, "id") || getAttr(objectSite, "gml:id");
+    if (!objectSiteId && gmlId) {
+      objectSiteId = gmlId;
+    }
+  }
+
+  return {
+    site: Object.keys(site).length > 0 ? site : null,
+    meta: objectSites.length > 1 ? { multipleObjectSites: true } : null,
+    ids: objectSiteId ? { objectSiteId } : null,
+  };
+};
+
 const getPlaceId = (place: any): string | null => {
   const direct = getText(getDirectChildren(place, "placeId")[0]);
   if (direct) {
@@ -358,6 +492,7 @@ const buildFeature = (
   const placeName = getPlaceName(place);
   const declaredAreaHa = getDeclaredArea(place);
   const geometryMemberIds = geometry ? collectGeometryMemberIds(place, []) : [];
+  const objectSiteInfo = extractObjectSite(place);
 
   const forestand: Record<string, any> = {
     placeType,
@@ -368,6 +503,19 @@ const buildFeature = (
     sourceCrs,
     geometryMemberIds,
   };
+
+  if (objectSiteInfo?.site) {
+    forestand.site = objectSiteInfo.site;
+  }
+  if (objectSiteInfo?.meta) {
+    forestand.siteMeta = objectSiteInfo.meta;
+  }
+  if (objectSiteInfo?.ids) {
+    forestand.ids = {
+      ...(forestand.ids || {}),
+      ...objectSiteInfo.ids,
+    };
+  }
 
   if (placeType === "Place_Shape") {
     forestand.shapeKind = shapeKind || "shape";
