@@ -132,15 +132,19 @@ export function ItemModal({
     }
     if (typeof value === "object") {
       // Handle attribute objects with code and label
-      if (value.code !== undefined && value.label !== undefined) {
+      if (
+        value.code !== undefined &&
+        value.label !== undefined &&
+        value.label !== null
+      ) {
         return `(${value.code}) ${value.label}`;
       }
-      // Handle objects with only code
+      // Handle objects with only code (or label is null)
       if (value.code !== undefined) {
         return String(value.code);
       }
       // Handle objects with only label
-      if (value.label !== undefined) {
+      if (value.label !== undefined && value.label !== null) {
         return String(value.label);
       }
       // Fallback for other objects
