@@ -1,3 +1,5 @@
+import { PlaceChange } from "./changeTracking";
+
 export type UUID = string;
 
 export interface Coordinate {
@@ -77,5 +79,7 @@ export interface Place {
   media?: MediaItem[];
   visible?: boolean;
   createdAt?: string;
+  modifiedAt?: string; // Last modification timestamp
   properties?: Record<string, any>;
+  changeHistory?: PlaceChange[]; // Append-only audit trail
 }
