@@ -39,6 +39,13 @@ type InventoryStorageV2 = {
   places: Place[];
 };
 
+type InventoryStorageV3 = {
+  version: 3;
+  places: Place[];
+};
+
+const CURRENT_VERSION = 3;
+
 const toGeoJsonPoint = (coordinate: {
   latitude: number;
   longitude: number;
@@ -143,6 +150,21 @@ export const normalizeInventoryData = (parsed: any): Place[] => {
     return legacyItems.map((item) => migrateLegacyItem(item));
   }
 
+  // Version 3: With change tracking (backwards compatible)
+  if (parsed && parsed.version === 3 && Array.isArray(parsed.places)) {
+    const stored = parsed as InventoryStorageV3;
+    return stored.places.map((place) => ({
+      ...place,
+      userJournal: (place.userJournal || []).map((entry: HistoryEntry) => ({
+        ...entry,
+        media: entry.media || [],
+      })),
+      media: place.media || [],
+      changeHistory: place.changeHistory || [],
+    }));
+  }
+
+  // Version 2: Pre-change tracking
   if (parsed && parsed.version === 2 && Array.isArray(parsed.places)) {
     const stored = parsed as InventoryStorageV2;
     return stored.places.map((place) => ({
@@ -152,6 +174,7 @@ export const normalizeInventoryData = (parsed: any): Place[] => {
         media: entry.media || [],
       })),
       media: place.media || [],
+      changeHistory: [], // Initialize empty for v2 data
     }));
   }
 
@@ -174,8 +197,8 @@ export const loadInventory = async (): Promise<Place[]> => {
 
 export const saveInventory = async (places: Place[]) => {
   try {
-    const payload: InventoryStorageV2 = {
-      version: 2,
+    const payload: InventoryStorageV3 = {
+      version: CURRENT_VERSION,
       places,
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));

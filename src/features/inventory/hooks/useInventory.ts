@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
-import { Place } from "../types";
+import { Place, ChangeActor } from "../types";
 import { loadInventory, saveInventory } from "../storage/inventoryStorage";
 import {
   addItem as addItemService,
@@ -10,11 +10,27 @@ import {
   calculateArea,
   importItems as importItemsService,
   appendItems as appendItemsService,
+  addItemWithTracking,
+  updateItemWithTracking,
+  toggleVisibilityWithTracking,
+  importItemsWithTracking,
+  appendItemsWithTracking,
 } from "../services/inventoryService";
 import { cleanupItemMedia } from "../services/mediaService";
+import { getUserActor, getImportActor } from "../services/actorContext";
 
 export function useInventory() {
   const [places, setPlaces] = useState<Place[]>([]);
+  const [actor, setActor] = useState<ChangeActor>({ type: "system" });
+
+  // Initialize device-based actor on mount
+  useEffect(() => {
+    const initActor = async () => {
+      const userActor = await getUserActor();
+      setActor(userActor);
+    };
+    initActor();
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -29,11 +45,11 @@ export function useInventory() {
   }, [places]);
 
   const addItem = (place: Place) => {
-    setPlaces((prev) => addItemService(prev, place));
+    setPlaces((prev) => addItemWithTracking(prev, place, actor));
   };
 
   const updateItem = (updatedPlace: Place) => {
-    setPlaces((prev) => updateItemService(prev, updatedPlace));
+    setPlaces((prev) => updateItemWithTracking(prev, updatedPlace, actor));
   };
 
   const deleteItem = (id: string) => {
@@ -54,15 +70,16 @@ export function useInventory() {
   };
 
   const toggleItemVisibility = (id: string) => {
-    setPlaces((prev) => toggleItemVisibilityService(prev, id));
+    setPlaces((prev) => toggleVisibilityWithTracking(prev, id, actor));
   };
 
   const importItems = (newPlaces: Place[]) => {
-    setPlaces((prev) => importItemsService(prev, newPlaces));
+    setPlaces((prev) => importItemsWithTracking(prev, newPlaces, "geojson"));
   };
 
   const appendItems = (newPlaces: Place[]) => {
-    setPlaces((prev) => appendItemsService(prev, newPlaces));
+    const importActor = getImportActor("geojson");
+    setPlaces((prev) => appendItemsWithTracking(prev, newPlaces, importActor));
   };
 
   return {

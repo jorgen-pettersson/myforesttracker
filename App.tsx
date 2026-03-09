@@ -15,6 +15,10 @@ import {
   Region,
   HistoryEntry,
 } from "./src/features/inventory";
+import {
+  ensureGeometryIds,
+  generateGeometryId,
+} from "./src/features/inventory/services/changeTrackingService";
 import { useLocation } from "./src/hooks";
 import { useImportExport } from "./src/features/importExport";
 import { useSettings } from "./src/features/preferences";
@@ -381,14 +385,16 @@ function AppContent() {
 
     if (drawingMode === "reposition" && repositionItem) {
       if (repositionItem.placeType === "Place_Point") {
+        // Generate new geometry ID for the repositioned point
+        const newGeometry = {
+          id: generateGeometryId(),
+          geometry: toGeoJsonPoint(coordinate),
+          crs: "EPSG:4326",
+        };
+
         updateItem({
           ...repositionItem,
-          geometries: [
-            {
-              geometry: toGeoJsonPoint(coordinate),
-              crs: "EPSG:4326",
-            },
-          ],
+          geometries: [newGeometry, ...(repositionItem.geometries || [])],
         });
         setRepositionItem(null);
         setDrawingMode("none");
@@ -402,7 +408,7 @@ function AppContent() {
     if (drawingMode === "point") {
       const now = new Date().toISOString();
       const parentPlaceId = findParentForPoint(coordinate);
-      setCurrentItem({
+      const newPlace: Place = {
         id: Date.now().toString(),
         placeType: "Place_Point",
         source: {
@@ -416,6 +422,7 @@ function AppContent() {
         },
         geometries: [
           {
+            id: generateGeometryId(),
             geometry: toGeoJsonPoint(coordinate),
             crs: "EPSG:4326",
           },
@@ -424,7 +431,8 @@ function AppContent() {
         createdAt: now,
         userJournal: [],
         media: [],
-      });
+      };
+      setCurrentItem(newPlace);
       setModalVisible(true);
       setDrawingMode("none");
     } else if (drawingMode === "area") {
@@ -445,7 +453,7 @@ function AppContent() {
     const area = calculateArea(areaPoints);
     const now = new Date().toISOString();
     const parentPlaceId = findParentForArea(areaPoints);
-    setCurrentItem({
+    const newPlace: Place = {
       id: Date.now().toString(),
       placeType: "Place_Area",
       source: {
@@ -461,6 +469,7 @@ function AppContent() {
       },
       geometries: [
         {
+          id: generateGeometryId(),
           geometry: toGeoJsonPolygon(areaPoints),
           crs: "EPSG:4326",
         },
@@ -469,7 +478,8 @@ function AppContent() {
       createdAt: now,
       userJournal: [],
       media: [],
-    });
+    };
+    setCurrentItem(newPlace);
     setModalVisible(true);
     setDrawingMode("none");
   };
@@ -559,14 +569,17 @@ function AppContent() {
         return;
       }
       const area = calculateArea(areaPoints);
+
+      // Generate new geometry ID for the repositioned area
+      const newGeometry = {
+        id: generateGeometryId(),
+        geometry: toGeoJsonPolygon(areaPoints),
+        crs: "EPSG:4326",
+      };
+
       updateItem({
         ...repositionItem,
-        geometries: [
-          {
-            geometry: toGeoJsonPolygon(areaPoints),
-            crs: "EPSG:4326",
-          },
-        ],
+        geometries: [newGeometry, ...(repositionItem.geometries || [])],
         attributes: {
           ...repositionItem.attributes,
           areaHa: area / 10000,
