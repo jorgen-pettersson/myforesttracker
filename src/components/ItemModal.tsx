@@ -153,6 +153,17 @@ export function ItemModal({
     return String(value);
   };
 
+  // Helper to get translated attribute name
+  const getAttributeName = (key: string): string => {
+    // Check if translation exists for this key
+    const translationKey = key as any;
+    if (t(translationKey) !== translationKey) {
+      return t(translationKey);
+    }
+    // Fallback to the key itself if no translation
+    return key;
+  };
+
   // Recursively render properties with support for nested objects
   const renderProperties = (
     props: Record<string, any>,
@@ -426,7 +437,9 @@ export function ItemModal({
                     if (key === "areaHa") {
                       return (
                         <View key={key} style={styles.viewField}>
-                          <Text style={styles.propertyKey}>{key}:</Text>
+                          <Text style={styles.propertyKey}>
+                            {getAttributeName(key)}:
+                          </Text>
                           <Text style={styles.propertyValue}>
                             {typeof value === "number"
                               ? value.toFixed(2)
@@ -441,7 +454,9 @@ export function ItemModal({
                       const displayValue = formatValue(value);
                       return (
                         <View key={key} style={styles.viewField}>
-                          <Text style={styles.propertyKey}>{key}:</Text>
+                          <Text style={styles.propertyKey}>
+                            {getAttributeName(key)}:
+                          </Text>
                           <Text style={styles.propertyValue}>
                             {displayValue}
                           </Text>
@@ -452,7 +467,9 @@ export function ItemModal({
                     // Handle simple string/number values
                     return (
                       <View key={key} style={styles.viewField}>
-                        <Text style={styles.propertyKey}>{key}:</Text>
+                        <Text style={styles.propertyKey}>
+                          {getAttributeName(key)}:
+                        </Text>
                         <Text style={styles.propertyValue}>{value || ""}</Text>
                       </View>
                     );
@@ -478,7 +495,9 @@ export function ItemModal({
                         typeof value === "number" ? String(value) : value || "";
                       return (
                         <View key={key} style={styles.attributeField}>
-                          <Text style={styles.label}>{key}</Text>
+                          <Text style={styles.label}>
+                            {getAttributeName(key)}
+                          </Text>
                           <TextInput
                             style={styles.input}
                             keyboardType="numeric"
@@ -549,7 +568,9 @@ export function ItemModal({
 
                       return (
                         <View key={key} style={styles.attributeField}>
-                          <Text style={styles.label}>{key}</Text>
+                          <Text style={styles.label}>
+                            {getAttributeName(key)}
+                          </Text>
                           <View style={styles.pickerWrapper}>
                             <Picker
                               key={`picker-${key}`}
@@ -611,7 +632,9 @@ export function ItemModal({
                       const labelValue = (value as any).label || "";
                       return (
                         <View key={key} style={styles.attributeField}>
-                          <Text style={styles.label}>{key}</Text>
+                          <Text style={styles.label}>
+                            {getAttributeName(key)}
+                          </Text>
                           <Text style={styles.subLabel}>{t("label")}</Text>
                           <TextInput
                             style={styles.input}
@@ -652,7 +675,9 @@ export function ItemModal({
 
                     return (
                       <View key={key} style={styles.attributeField}>
-                        <Text style={styles.label}>{key}</Text>
+                        <Text style={styles.label}>
+                          {getAttributeName(key)}
+                        </Text>
                         <TextInput
                           style={styles.input}
                           value={value == null ? "" : String(value)}

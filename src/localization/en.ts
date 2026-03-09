@@ -129,6 +129,33 @@ export const en = {
   // Language names
   english: "English",
   swedish: "Swedish",
+
+  // Attribute names
+  ASIO: "ASIO",
+  BearingCapacity: "Bearing Capacity",
+  Climate: "Climate",
+  DegeneratedLand: "Degenerated Land",
+  Ditching: "Ditching",
+  EarlierLandUse: "Earlier Land Use",
+  FrostExposure: "Frost Exposure",
+  GroundLayer: "Ground Layer",
+  LandUseSVL: "Land Use (SVL)",
+  LandUseTrad: "Land Use (Traditional)",
+  LateralSoilWater: "Lateral Soil Water",
+  ManagementClass: "Management Class",
+  MaturityClass: "Maturity Class",
+  ParticleFraction: "Particle Fraction",
+  Slope: "Slope",
+  SlopeDirection: "Slope Direction",
+  Soil: "Soil",
+  SoilDepth: "Soil Depth",
+  SoilMoisture: "Soil Moisture",
+  SoilTexture: "Soil Texture",
+  species: "Species",
+  SurfaceStructure: "Surface Structure",
+  Vegetation: "Vegetation",
+  WaterManagementClass: "Water Management Class",
+  areaHa: "Area (ha)",
 };
 
 export type TranslationKeys = keyof typeof en;
