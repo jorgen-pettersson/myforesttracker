@@ -275,7 +275,7 @@ export function useImportExport() {
       // Write JSON
       if (format === "json" || format === "all") {
         const jsonData = JSON.stringify(
-          { version: 2, places: exportPlaces },
+          { version: 3, places: exportPlaces },
           null,
           2
         );
