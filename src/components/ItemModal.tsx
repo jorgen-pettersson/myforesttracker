@@ -125,7 +125,7 @@ export function ItemModal({
   // Helper to format property values (handles nested objects and arrays)
   const formatValue = (value: any): string => {
     if (value === null || value === undefined) {
-      return "-";
+      return "";
     }
     if (Array.isArray(value)) {
       return value.map((v) => formatValue(v)).join(", ");
@@ -426,7 +426,7 @@ export function ItemModal({
                           <Text style={styles.propertyValue}>
                             {typeof value === "number"
                               ? value.toFixed(2)
-                              : value || "-"}
+                              : value || ""}
                           </Text>
                         </View>
                       );
@@ -449,7 +449,7 @@ export function ItemModal({
                     return (
                       <View key={key} style={styles.viewField}>
                         <Text style={styles.propertyKey}>{key}:</Text>
-                        <Text style={styles.propertyValue}>{value || "-"}</Text>
+                        <Text style={styles.propertyValue}>{value || ""}</Text>
                       </View>
                     );
                   })}
