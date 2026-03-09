@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { Place, HistoryEntry, MediaItem } from "../features/inventory";
 import { itemModalStyles as styles, mediaStyles } from "../styles";
 import { useMedia } from "../hooks";
 import { MediaGallery } from "./MediaGallery";
 import { formatArea } from "../utils";
 import { useLocalization } from "../localization";
+import forestandSiteDefaultMapping from "../features/importExport/config/forestandSiteDefaultMapping.json";
 
 const MAX_MEDIA_ITEMS = 5;
 
@@ -57,6 +59,51 @@ export function ItemModal({
   const [newHistoryMedia, setNewHistoryMedia] = useState<MediaItem[]>([]);
   const [showAddHistory, setShowAddHistory] = useState(false);
   const { t } = useLocalization();
+  const attributeOptions = useMemo(() => {
+    const mapping = forestandSiteDefaultMapping as Record<
+      string,
+      {
+        attributeName?: string | null;
+        codes?: Record<
+          string,
+          {
+            label?: string | null;
+            internal?: { code?: string; label?: string };
+          }
+        >;
+      }
+    >;
+    const result: Record<string, { code: string; label: string | null }[]> = {};
+    for (const entry of Object.values(mapping)) {
+      if (!entry.attributeName || !entry.codes) {
+        continue;
+      }
+      const options = Object.entries(entry.codes).map(([code, meta]) => ({
+        code: String(code),
+        label: meta?.label ?? null,
+      }));
+      if (options.length === 0) {
+        continue;
+      }
+      if (!result[entry.attributeName]) {
+        result[entry.attributeName] = [];
+      }
+      result[entry.attributeName].push(...options);
+    }
+
+    for (const [key, values] of Object.entries(result)) {
+      const seen = new Set<string>();
+      result[key] = values.filter((option) => {
+        if (seen.has(option.code)) {
+          return false;
+        }
+        seen.add(option.code);
+        return true;
+      });
+    }
+
+    return result;
+  }, []);
 
   const { showMediaPicker, deleteMedia } = useMedia();
 
@@ -84,6 +131,19 @@ export function ItemModal({
       return value.map((v) => formatValue(v)).join(", ");
     }
     if (typeof value === "object") {
+      // Handle attribute objects with code and label
+      if (value.code !== undefined && value.label !== undefined) {
+        return `(${value.code}) ${value.label}`;
+      }
+      // Handle objects with only code
+      if (value.code !== undefined) {
+        return String(value.code);
+      }
+      // Handle objects with only label
+      if (value.label !== undefined) {
+        return String(value.label);
+      }
+      // Fallback for other objects
       return JSON.stringify(value);
     }
     return String(value);
@@ -104,6 +164,7 @@ export function ItemModal({
       "description",
       "Description",
       "fid",
+      "forestand",
     ];
     const result: React.ReactNode[] = [];
 
@@ -347,6 +408,265 @@ export function ItemModal({
                   />
                 </View>
               )}
+
+            {/* Attributes - read-only view for areas */}
+            {isViewMode && item.placeType === "Place_Area" && (
+              <View style={styles.attributesSection}>
+                <Text style={styles.viewLabel}>{t("attributes")}</Text>
+                {Object.keys(item.attributes || {})
+                  .filter((key) => !["name", "notes", "color"].includes(key))
+                  .sort()
+                  .map((key) => {
+                    const value = item.attributes?.[key];
+
+                    if (key === "areaHa") {
+                      return (
+                        <View key={key} style={styles.viewField}>
+                          <Text style={styles.propertyKey}>{key}:</Text>
+                          <Text style={styles.propertyValue}>
+                            {typeof value === "number"
+                              ? value.toFixed(2)
+                              : value || "-"}
+                          </Text>
+                        </View>
+                      );
+                    }
+
+                    // Handle attributes with code/label objects
+                    if (value && typeof value === "object") {
+                      const displayValue = formatValue(value);
+                      return (
+                        <View key={key} style={styles.viewField}>
+                          <Text style={styles.propertyKey}>{key}:</Text>
+                          <Text style={styles.propertyValue}>
+                            {displayValue}
+                          </Text>
+                        </View>
+                      );
+                    }
+
+                    // Handle simple string/number values
+                    return (
+                      <View key={key} style={styles.viewField}>
+                        <Text style={styles.propertyKey}>{key}:</Text>
+                        <Text style={styles.propertyValue}>{value || "-"}</Text>
+                      </View>
+                    );
+                  })}
+              </View>
+            )}
+
+            {/* Attributes - editable for areas */}
+            {isEditMode && item.placeType === "Place_Area" && (
+              <View style={styles.attributesSection}>
+                <Text style={styles.historySectionTitle}>
+                  {t("attributes")}
+                </Text>
+                {Object.keys(item.attributes || {})
+                  .filter((key) => !["name", "notes", "color"].includes(key))
+                  .sort()
+                  .map((key) => {
+                    const value = item.attributes?.[key];
+                    const options = attributeOptions[key];
+
+                    if (key === "areaHa") {
+                      const areaValue =
+                        typeof value === "number" ? String(value) : value || "";
+                      return (
+                        <View key={key} style={styles.attributeField}>
+                          <Text style={styles.label}>{key}</Text>
+                          <TextInput
+                            style={styles.input}
+                            keyboardType="numeric"
+                            value={String(areaValue)}
+                            onChangeText={(text) => {
+                              const numeric = Number(text);
+                              onChangeItem({
+                                ...item,
+                                attributes: {
+                                  ...item.attributes,
+                                  [key]: Number.isNaN(numeric)
+                                    ? undefined
+                                    : numeric,
+                                },
+                              });
+                            }}
+                          />
+                        </View>
+                      );
+                    }
+
+                    if (options && options.length > 0) {
+                      const rawCode =
+                        value && typeof value === "object"
+                          ? String((value as any).code ?? "")
+                          : value != null
+                          ? String(value)
+                          : "";
+                      let currentLabel =
+                        value && typeof value === "object"
+                          ? (value as any).label
+                          : null;
+                      let currentCode = rawCode;
+                      if (!currentCode && currentLabel) {
+                        const labelMatch = options.find(
+                          (option) => option.label === currentLabel
+                        );
+                        if (labelMatch) {
+                          currentCode = labelMatch.code;
+                        }
+                      }
+                      if (currentCode && !currentLabel) {
+                        const codeMatch = options.find(
+                          (option) => option.code === currentCode
+                        );
+                        if (codeMatch?.label) {
+                          currentLabel = codeMatch.label;
+                        }
+                      }
+                      const hasCurrent = options.some(
+                        (option) => option.code === currentCode
+                      );
+                      const pickerOptions =
+                        hasCurrent || !currentCode
+                          ? options
+                          : [
+                              {
+                                code: String(currentCode),
+                                label: currentLabel || String(currentCode),
+                              },
+                              ...options,
+                            ];
+                      const emptyValue = "__none__";
+                      const selectedValue =
+                        pickerOptions.find(
+                          (option) => option.code === currentCode
+                        )?.code ?? emptyValue;
+
+                      return (
+                        <View key={key} style={styles.attributeField}>
+                          <Text style={styles.label}>{key}</Text>
+                          <View style={styles.pickerWrapper}>
+                            <Picker
+                              key={`picker-${key}`}
+                              selectedValue={String(selectedValue)}
+                              mode="dropdown"
+                              style={{
+                                height: 50,
+                                width: "100%",
+                                color: "#000",
+                              }}
+                              onValueChange={(selected) => {
+                                const selectedCode = String(selected || "");
+                                if (
+                                  !selectedCode ||
+                                  selectedCode === emptyValue
+                                ) {
+                                  return;
+                                }
+                                const option = pickerOptions.find(
+                                  (entry) => entry.code === selectedCode
+                                );
+                                onChangeItem({
+                                  ...item,
+                                  attributes: {
+                                    ...item.attributes,
+                                    [key]: {
+                                      code: selectedCode,
+                                      label: option?.label ?? null,
+                                    },
+                                  },
+                                });
+                              }}
+                            >
+                              <Picker.Item
+                                label={t("selectOption")}
+                                value={String(emptyValue)}
+                              />
+                              {pickerOptions.map((option) => {
+                                const itemValue = String(option.code);
+                                const itemLabel = option.label
+                                  ? `(${itemValue}) ${option.label}`
+                                  : itemValue;
+                                return (
+                                  <Picker.Item
+                                    key={itemValue}
+                                    label={itemLabel}
+                                    value={itemValue}
+                                  />
+                                );
+                              })}
+                            </Picker>
+                          </View>
+                        </View>
+                      );
+                    }
+
+                    if (value && typeof value === "object") {
+                      const codeValue = (value as any).code || "";
+                      const labelValue = (value as any).label || "";
+                      return (
+                        <View key={key} style={styles.attributeField}>
+                          <Text style={styles.label}>{key}</Text>
+                          <Text style={styles.subLabel}>{t("label")}</Text>
+                          <TextInput
+                            style={styles.input}
+                            value={labelValue}
+                            onChangeText={(text) =>
+                              onChangeItem({
+                                ...item,
+                                attributes: {
+                                  ...item.attributes,
+                                  [key]: {
+                                    code: codeValue,
+                                    label: text,
+                                  },
+                                },
+                              })
+                            }
+                          />
+                          <Text style={styles.subLabel}>{t("code")}</Text>
+                          <TextInput
+                            style={styles.input}
+                            value={codeValue}
+                            onChangeText={(text) =>
+                              onChangeItem({
+                                ...item,
+                                attributes: {
+                                  ...item.attributes,
+                                  [key]: {
+                                    code: text,
+                                    label: labelValue,
+                                  },
+                                },
+                              })
+                            }
+                          />
+                        </View>
+                      );
+                    }
+
+                    return (
+                      <View key={key} style={styles.attributeField}>
+                        <Text style={styles.label}>{key}</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={value == null ? "" : String(value)}
+                          onChangeText={(text) =>
+                            onChangeItem({
+                              ...item,
+                              attributes: {
+                                ...item.attributes,
+                                [key]: text,
+                              },
+                            })
+                          }
+                        />
+                      </View>
+                    );
+                  })}
+              </View>
+            )}
 
             {/* Created date - only in view mode */}
             {isViewMode && item.createdAt && (

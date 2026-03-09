@@ -80,6 +80,27 @@ export const itemModalStyles = StyleSheet.create({
     borderTopColor: "#eee",
     paddingTop: 15,
   },
+  attributesSection: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingTop: 15,
+    marginBottom: 10,
+  },
+  attributeField: {
+    marginBottom: 12,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+    marginBottom: 5,
+  },
+  subLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+  },
   historySectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
