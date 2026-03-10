@@ -402,7 +402,7 @@ export function ItemModal({
                       const heightValue = item.attributes?.speciesHeight;
                       const speciesDisplay = formatValue(speciesValue); // e.g., "(1) Tall"
                       const displayText = heightValue
-                        ? `${speciesDisplay} ${heightValue}m`
+                        ? `${speciesDisplay}${heightValue}`
                         : speciesDisplay;
 
                       return (
