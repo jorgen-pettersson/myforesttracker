@@ -396,6 +396,32 @@ export function ItemModal({
                   .map((key) => {
                     const value = item.attributes?.[key];
 
+                    // Special handling for species composite in view mode
+                    if (key === "species") {
+                      const speciesValue = item.attributes?.species;
+                      const heightValue = item.attributes?.speciesHeight;
+                      const speciesDisplay = formatValue(speciesValue); // e.g., "(1) Tall"
+                      const displayText = heightValue
+                        ? `${speciesDisplay} ${heightValue}m`
+                        : speciesDisplay;
+
+                      return (
+                        <View key={key} style={styles.viewField}>
+                          <Text style={styles.propertyKey}>
+                            {getAttributeName(key)}:
+                          </Text>
+                          <Text style={styles.propertyValue}>
+                            {displayText}
+                          </Text>
+                        </View>
+                      );
+                    }
+
+                    // Skip speciesHeight (already rendered with species)
+                    if (key === "speciesHeight") {
+                      return null;
+                    }
+
                     if (key === "areaHa") {
                       return (
                         <View key={key} style={styles.viewField}>
@@ -452,6 +478,155 @@ export function ItemModal({
                     const value = item.attributes?.[key];
                     const options = attributeOptions[key];
                     const attributeType = getAttributeType(key);
+
+                    // Special handling for species composite (species + height)
+                    if (key === "species") {
+                      const speciesValue = item.attributes?.species;
+                      const heightValue = item.attributes?.speciesHeight;
+                      const speciesOptions = attributeOptions["species"];
+
+                      const rawCode =
+                        speciesValue && typeof speciesValue === "object"
+                          ? String((speciesValue as any).code ?? "")
+                          : speciesValue != null
+                          ? String(speciesValue)
+                          : "";
+                      let currentLabel =
+                        speciesValue && typeof speciesValue === "object"
+                          ? (speciesValue as any).label
+                          : null;
+                      let currentCode = rawCode;
+                      if (!currentCode && currentLabel) {
+                        const labelMatch = speciesOptions?.find(
+                          (option) => option.label === currentLabel
+                        );
+                        if (labelMatch) {
+                          currentCode = labelMatch.code;
+                        }
+                      }
+                      if (currentCode && !currentLabel && speciesOptions) {
+                        const codeMatch = speciesOptions.find(
+                          (option) => option.code === currentCode
+                        );
+                        if (codeMatch?.label) {
+                          currentLabel = codeMatch.label;
+                        }
+                      }
+                      const hasCurrent = speciesOptions?.some(
+                        (option) => option.code === currentCode
+                      );
+                      const pickerOptions =
+                        hasCurrent || !currentCode
+                          ? speciesOptions || []
+                          : [
+                              {
+                                code: String(currentCode),
+                                label: currentLabel || String(currentCode),
+                              },
+                              ...(speciesOptions || []),
+                            ];
+                      const emptyValue = "__none__";
+                      const selectedValue =
+                        pickerOptions.find(
+                          (option) => option.code === currentCode
+                        )?.code ?? emptyValue;
+
+                      return (
+                        <View
+                          key="species-composite"
+                          style={styles.attributeField}
+                        >
+                          <Text style={styles.label}>
+                            {getAttributeName("species")}
+                          </Text>
+
+                          {/* Species picker */}
+                          <View style={styles.pickerWrapper}>
+                            <Picker
+                              key="picker-species"
+                              selectedValue={String(selectedValue)}
+                              mode="dropdown"
+                              style={{
+                                height: 50,
+                                width: "100%",
+                                color: "#000",
+                              }}
+                              onValueChange={(selected) => {
+                                if (selected === emptyValue) {
+                                  onChangeItem({
+                                    ...item,
+                                    attributes: {
+                                      ...item.attributes,
+                                      species: undefined,
+                                    },
+                                  });
+                                  return;
+                                }
+                                const selectedOption = pickerOptions.find(
+                                  (o) => o.code === selected
+                                );
+                                onChangeItem({
+                                  ...item,
+                                  attributes: {
+                                    ...item.attributes,
+                                    species: {
+                                      code: selected,
+                                      label: selectedOption?.label || null,
+                                    },
+                                  },
+                                });
+                              }}
+                            >
+                              <Picker.Item
+                                label={t("selectOption")}
+                                value={String(emptyValue)}
+                              />
+                              {pickerOptions.map((option) => {
+                                const itemValue = String(option.code);
+                                const itemLabel = option.label
+                                  ? `(${itemValue}) ${option.label}`
+                                  : itemValue;
+                                return (
+                                  <Picker.Item
+                                    key={itemValue}
+                                    label={itemLabel}
+                                    value={itemValue}
+                                  />
+                                );
+                              })}
+                            </Picker>
+                          </View>
+
+                          {/* Height input */}
+                          <Text style={styles.subLabel}>
+                            {getAttributeName("speciesHeight")}
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            keyboardType="numeric"
+                            placeholder="Height (m)"
+                            value={heightValue ? String(heightValue) : ""}
+                            onChangeText={(text) => {
+                              const height = Number(text);
+                              onChangeItem({
+                                ...item,
+                                attributes: {
+                                  ...item.attributes,
+                                  speciesHeight: Number.isNaN(height)
+                                    ? undefined
+                                    : height,
+                                },
+                              });
+                            }}
+                          />
+                        </View>
+                      );
+                    }
+
+                    // Skip speciesHeight (already rendered with species)
+                    if (key === "speciesHeight") {
+                      return null;
+                    }
 
                     // Handle number-type attributes
                     if (
