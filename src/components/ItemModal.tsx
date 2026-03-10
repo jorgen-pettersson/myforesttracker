@@ -15,7 +15,6 @@ import { useMedia } from "../hooks";
 import { MediaGallery } from "./MediaGallery";
 import { formatArea } from "../utils";
 import { useLocalization } from "../localization";
-import forestandSiteDefaultMapping from "../features/importExport/config/forestandSiteDefaultMapping.json";
 import { getAllAttributeOptionsMap } from "../features/inventory/services/attributeService";
 
 const MAX_MEDIA_ITEMS = 5;
@@ -61,66 +60,8 @@ export function ItemModal({
   const [showAddHistory, setShowAddHistory] = useState(false);
   const { t } = useLocalization();
   const attributeOptions = useMemo(() => {
-    // New system: Use attribute master (POC attributes)
-    const newOptions = getAllAttributeOptionsMap();
-    console.log(
-      "[POC] Loaded attribute options from master:",
-      Object.keys(newOptions)
-    );
-
-    // Old system: Fallback for non-POC attributes
-    const mapping = forestandSiteDefaultMapping as Record<
-      string,
-      {
-        attributeName?: string | null;
-        codes?: Record<
-          string,
-          {
-            label?: string | null;
-            internal?: { code?: string; label?: string };
-          }
-        >;
-      }
-    >;
-    const oldOptions: Record<string, { code: string; label: string | null }[]> =
-      {};
-    for (const entry of Object.values(mapping)) {
-      if (!entry.attributeName || !entry.codes) {
-        continue;
-      }
-
-      // Skip if already in new system
-      if (newOptions[entry.attributeName]) {
-        continue;
-      }
-
-      const options = Object.entries(entry.codes).map(([code, meta]) => ({
-        code: String(code),
-        label: meta?.label ?? null,
-      }));
-      if (options.length === 0) {
-        continue;
-      }
-      if (!oldOptions[entry.attributeName]) {
-        oldOptions[entry.attributeName] = [];
-      }
-      oldOptions[entry.attributeName].push(...options);
-    }
-
-    // Deduplicate old options
-    for (const [key, values] of Object.entries(oldOptions)) {
-      const seen = new Set<string>();
-      oldOptions[key] = values.filter((option) => {
-        if (seen.has(option.code)) {
-          return false;
-        }
-        seen.add(option.code);
-        return true;
-      });
-    }
-
-    // Merge: new system takes precedence
-    return { ...oldOptions, ...newOptions };
+    // Use attribute master for all select attributes
+    return getAllAttributeOptionsMap();
   }, []);
 
   const { showMediaPicker, deleteMedia } = useMedia();

@@ -14,15 +14,397 @@
       "type": "number"
     },
     {
+      "name": "color",
+      "type": "text"
+    },
+    {
+      "name": "parentPlaceId",
+      "type": "text"
+    },
+    {
+      "name": "ASIO",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "aldrig brunnit"
+        },
+        {
+          "code": "E2",
+          "label": "sällan brunnit"
+        },
+        {
+          "code": "E3",
+          "label": "brunnit ibland"
+        },
+        {
+          "code": "E4",
+          "label": "brunnit ofta"
+        }
+      ]
+    },
+    {
+      "name": "BearingCapacity",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "mycket goda grundförhållanden, dvs_ det går att köra året runt"
+        },
+        {
+          "code": "E2",
+          "label": "goda grundförhållanden, dvs_ går att köra året, förutom vid tjällossning eller ymniga höstregn"
+        },
+        {
+          "code": "E3",
+          "label": "medelgoda grundförhållanden, dvs_ det krävs försiktighet under perioden med hög markfuktighet, särskilt i lågt liggande terrängpartier, med tunga maskiner och vid många överfarter"
+        },
+        {
+          "code": "E4",
+          "label": "dåliga grundförhållanden, dvs_ marken kräver armering, bärigheten är tveksam för tunga maskiner när marken inte är frusen samt det finns risk för lokala försumpningar"
+        },
+        {
+          "code": "E5",
+          "label": "mycket dåliga grundförhållanden; hjulfordon kan användas endast då marken är frusen"
+        }
+      ]
+    },
+    {
+      "name": "Climate",
+      "type": "select",
+      "options": [
+        {
+          "code": "E0",
+          "label": "övriga"
+        },
+        {
+          "code": "M1",
+          "label": "maritim, västkusten"
+        },
+        {
+          "code": "M2",
+          "label": "maritim, östkusten"
+        },
+        {
+          "code": "M3",
+          "label": "maritim, fjällen"
+        },
+        {
+          "code": "K1",
+          "label": "kontinental, Mellansverige"
+        },
+        {
+          "code": "K2",
+          "label": "kontinental, norra Sverige"
+        },
+        {
+          "code": "K3",
+          "label": "kontinental, södra Sverige"
+        }
+      ]
+    },
+    {
+      "name": "DegeneratedLand",
+      "type": "select",
+      "options": [
+        {
+          "code": "E0",
+          "label": "ja"
+        },
+        {
+          "code": "E1",
+          "label": "nej"
+        }
+      ]
+    },
+    {
+      "name": "Ditching",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "odikat"
+        },
+        {
+          "code": "E2",
+          "label": "dikat - nuvarande bestånd, fungerar"
+        },
+        {
+          "code": "E3",
+          "label": "dikat - tidigare bestånd, fungerar"
+        },
+        {
+          "code": "E4",
+          "label": "dikat - nuvarande bestånd, fungerar ej"
+        },
+        {
+          "code": "E5",
+          "label": "dikat - tidigare bestånd, fungerar ej"
+        },
+        {
+          "code": "E6",
+          "label": "dikat - ospecificerat"
+        }
+      ]
+    },
+    {
+      "name": "EarlierLandUse",
+      "type": "select",
+      "options": [
+        {
+          "code": "E0",
+          "label": "den tidigare markanvändningen var samma som den nuvarande, eller ingendera av nedanstående markanvändningar"
+        },
+        {
+          "code": "E2",
+          "label": "före detta naturbete där betet upphört för mindre än 20 år sedan (naturbete)"
+        },
+        {
+          "code": "E3",
+          "label": "annan jordbruksmark som inte har varit hagmark och där brukningen upphörde för mindre än 20 år sedan"
+        },
+        {
+          "code": "E4",
+          "label": "före detta jordbruksmark där brukningen upphörde för mer än 20 år sedan och som är kalmark som inte har varit beskogad sedan dess"
+        },
+        {
+          "code": "E5",
+          "label": "åkermark där brukningen upphörde för mer än 20 år sedan och som är beskogat med första generationen skog"
+        },
+        {
+          "code": "E6",
+          "label": "grustäkt"
+        },
+        {
+          "code": "E7",
+          "label": "bergtäkt"
+        },
+        {
+          "code": "E8",
+          "label": "torvtäkt"
+        }
+      ]
+    },
+    {
+      "name": "FrostExposure",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "liten eller måttlig"
+        },
+        {
+          "code": "E2",
+          "label": "hög risk"
+        },
+        {
+          "code": "E3",
+          "label": "extremt hög risk"
+        }
+      ]
+    },
+    {
+      "name": "GroundLayer",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "lavtyp"
+        },
+        {
+          "code": "E2",
+          "label": "lavrik vitmosstyp"
+        },
+        {
+          "code": "E3",
+          "label": "lavrik typ"
+        },
+        {
+          "code": "E4",
+          "label": "vitmosstyp"
+        },
+        {
+          "code": "E5",
+          "label": "sumpmosstyp"
+        },
+        {
+          "code": "E6",
+          "label": "friskmosstyp"
+        },
+        {
+          "code": "E7",
+          "label": "bottenskikt saknas"
+        }
+      ]
+    },
+    {
+      "name": "LandUseSVL",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "produktiv skogsmark"
+        },
+        {
+          "code": "E2",
+          "label": "skogligt impediment"
+        },
+        {
+          "code": "E2_1",
+          "label": "improduktiv skogsmark"
+        },
+        {
+          "code": "E2_2",
+          "label": "träd- och buskmark"
+        },
+        {
+          "code": "E3",
+          "label": "övrig mark"
+        }
+      ]
+    },
+    {
+      "name": "LandUseTrad",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "produktiv skogsmark"
+        },
+        {
+          "code": "E2_0",
+          "label": "impediment – ospecificerat"
+        },
+        {
+          "code": "E2_1",
+          "label": "impediment – myr"
+        },
+        {
+          "code": "E2_2",
+          "label": "impediment – berg"
+        },
+        {
+          "code": "E2_3",
+          "label": "impediment – fjällbarrskog"
+        },
+        {
+          "code": "E2_4",
+          "label": "impediment – fjäll"
+        },
+        {
+          "code": "E3_0",
+          "label": "vatten – ospecificerat"
+        },
+        {
+          "code": "E3_1",
+          "label": "vatten – sötvatten"
+        },
+        {
+          "code": "E3_2",
+          "label": "vatten – saltvatten"
+        },
+        {
+          "code": "E4_0",
+          "label": "jordbruksmark – ospecificerat"
+        },
+        {
+          "code": "E4_1",
+          "label": "jordbruksmark – åkermark"
+        },
+        {
+          "code": "E4_2",
+          "label": "jordbruksmark – betesmark"
+        },
+        {
+          "code": "E5_0",
+          "label": "annan mark – ospecificerat"
+        },
+        {
+          "code": "E5_1",
+          "label": "annan mark – bebyggd mark"
+        },
+        {
+          "code": "E5_2",
+          "label": "annan mark – väg, järnväg"
+        },
+        {
+          "code": "E5_3",
+          "label": "annan mark – täkt"
+        },
+        {
+          "code": "E5_4",
+          "label": "annan mark – kraftledning"
+        }
+      ]
+    },
+    {
+      "name": "LateralSoilWater",
+      "type": "select",
+      "options": [
+        {
+          "code": "S",
+          "label": "rörligt markvatten saknas"
+        },
+        {
+          "code": "K",
+          "label": "rörligt markvatten förekommer sannolikt under kortare perioder"
+        },
+        {
+          "code": "L",
+          "label": "rörligt markvatten förekommer sannolikt under längre perioder"
+        }
+      ]
+    },
+    {
+      "name": "ManagementClass",
+      "type": "select",
+      "options": [
+        {
+          "code": "PG",
+          "label": "produktion med generell miljöhänsyn"
+        },
+        {
+          "code": "PF_K",
+          "label": "produktion med förstärkt miljöhänsyn"
+        },
+        {
+          "code": "NS",
+          "label": "naturvård med skötsel"
+        },
+        {
+          "code": "NO",
+          "label": "naturvård, orört"
+        }
+      ]
+    },
+    {
       "name": "MaturityClass",
       "type": "select",
       "options": [
-        { "code": "K1", "label": "kalmark – åtgärder kvarstår" },
-        { "code": "K2", "label": "kalmark – åtgärder utförda" },
-        { "code": "R1", "label": "röjningsskog – plantskog" },
-        { "code": "R2", "label": "röjningsskog – ungskog" },
-        { "code": "G1", "label": "gallringsskog - yngre gallringsskog" },
-        { "code": "G2", "label": "gallringsskog - äldre gallringsskog" },
+        {
+          "code": "K1",
+          "label": "kalmark – åtgärder kvarstår"
+        },
+        {
+          "code": "K2",
+          "label": "kalmark – åtgärder utförda"
+        },
+        {
+          "code": "R1",
+          "label": "röjningsskog – plantskog"
+        },
+        {
+          "code": "R2",
+          "label": "röjningsskog – ungskog"
+        },
+        {
+          "code": "G1",
+          "label": "gallringsskog - yngre gallringsskog"
+        },
+        {
+          "code": "G2",
+          "label": "gallringsskog - äldre gallringsskog"
+        },
         {
           "code": "S1",
           "label": "föryngringsavverkningsskog - kan föryngringsavverkas"
@@ -35,22 +417,350 @@
           "code": "S3",
           "label": "föryngringsavverkningsskog - mogen att föryngringsavverkas men bör inte föryngringsavverkas av naturvårdsskäl"
         },
-        { "code": "E1", "label": "lågproducerande skog – restskog" },
+        {
+          "code": "E1",
+          "label": "lågproducerande skog – restskog"
+        },
         {
           "code": "E2",
-          "label": "lågproducerande skog – trädklädd impedimentsmark"
+          "label": "lågproducerande skog - gles skog"
         },
-        { "code": "E3", "label": "lågproducerande skog – temporärt impediment" }
+        {
+          "code": "E3",
+          "label": "lågproducerande skog – hagmarksskog"
+        }
       ]
     },
     {
-      "name": "ManagementClass",
+      "name": "ParticleFraction",
       "type": "select",
       "options": [
-        { "code": "PG", "label": "produktion med generell miljöhänsyn" },
-        { "code": "PF_K", "label": "produktion med förstärkt miljöhänsyn" },
-        { "code": "NS", "label": "naturvård med skötsel" },
-        { "code": "NO", "label": "naturvård utan skötsel" }
+        {
+          "code": "E1",
+          "label": "grovkornig (0,6 mm – 2 mm)"
+        },
+        {
+          "code": "E2",
+          "label": "medelgrov (0,2 mm – 0,6 mm)"
+        },
+        {
+          "code": "E3",
+          "label": "finkorning (0,06 mm – 0,2 mm)"
+        }
+      ]
+    },
+    {
+      "name": "Slope",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "0-10 %"
+        },
+        {
+          "code": "E2",
+          "label": "10-20 %"
+        },
+        {
+          "code": "E3",
+          "label": "20-33 %"
+        },
+        {
+          "code": "E4",
+          "label": "33-50 %"
+        },
+        {
+          "code": "E5",
+          "label": ">50 %"
+        }
+      ]
+    },
+    {
+      "name": "SlopeDirection",
+      "type": "select",
+      "options": [
+        {
+          "code": "E01",
+          "label": "sluttar mot norr"
+        },
+        {
+          "code": "E12",
+          "label": "sluttar mot nordost"
+        },
+        {
+          "code": "E02",
+          "label": "sluttar mot ost"
+        },
+        {
+          "code": "E32",
+          "label": "sluttar mot sydost"
+        },
+        {
+          "code": "E03",
+          "label": "sluttar mot syd"
+        },
+        {
+          "code": "E34",
+          "label": "sluttar mot sydväst"
+        },
+        {
+          "code": "E04",
+          "label": "sluttar mot väst"
+        },
+        {
+          "code": "E14",
+          "label": "sluttar mot nordväst"
+        },
+        {
+          "code": "E0",
+          "label": "plan"
+        },
+        {
+          "code": "E5",
+          "label": "varierad"
+        }
+      ]
+    },
+    {
+      "name": "Soil",
+      "type": "select",
+      "options": [
+        {
+          "code": "E0",
+          "label": "saknas"
+        },
+        {
+          "code": "E1",
+          "label": "sediment - hög sorteringsgrad"
+        },
+        {
+          "code": "E2",
+          "label": "sediment - låg sorteringsgrad"
+        },
+        {
+          "code": "E3",
+          "label": "sediment - ospecificerat"
+        },
+        {
+          "code": "E4",
+          "label": "morän"
+        },
+        {
+          "code": "E5",
+          "label": "organogen"
+        },
+        {
+          "code": "E6",
+          "label": "mosaikmark"
+        }
+      ]
+    },
+    {
+      "name": "SoilDepth",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "mäktigt (mer än 70 cm)"
+        },
+        {
+          "code": "E2",
+          "label": "tämligen grunt (mellan 20 cm och 70 cm)"
+        },
+        {
+          "code": "E3",
+          "label": "grunt (mindre än 20 cm)"
+        },
+        {
+          "code": "E4",
+          "label": "mycket varierande"
+        }
+      ]
+    },
+    {
+      "name": "SoilMoisture",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "torr"
+        },
+        {
+          "code": "E2",
+          "label": "frisk"
+        },
+        {
+          "code": "E3",
+          "label": "frisk-fuktig"
+        },
+        {
+          "code": "E4",
+          "label": "fuktig"
+        },
+        {
+          "code": "E5",
+          "label": "blöt"
+        }
+      ]
+    },
+    {
+      "name": "SoilTexture",
+      "type": "select",
+      "options": [
+        {
+          "code": "GR",
+          "label": "grusig morän eller grus"
+        },
+        {
+          "code": "SA",
+          "label": "sandig morän eller grovsand"
+        },
+        {
+          "code": "SM",
+          "label": "sandig-moig, mellansand eller grovmo"
+        },
+        {
+          "code": "FM",
+          "label": "moig morän, mjälig morän, leriga moräner, finmo, mjäla, lera"
+        }
+      ]
+    },
+    {
+      "name": "SurfaceStructure",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1",
+          "label": "mycket jämn markyta"
+        },
+        {
+          "code": "E2",
+          "label": "tämligen jämn markyta (mellanklass)"
+        },
+        {
+          "code": "E3",
+          "label": "något ojämn markyta"
+        },
+        {
+          "code": "E4",
+          "label": "ojämn markyta (mellanklass)"
+        },
+        {
+          "code": "E5",
+          "label": "mycket ojämn markyta"
+        }
+      ]
+    },
+    {
+      "name": "Vegetation",
+      "type": "select",
+      "options": [
+        {
+          "code": "E1_0",
+          "label": "högört - ospec"
+        },
+        {
+          "code": "E1_1",
+          "label": "högört - högört utan ris"
+        },
+        {
+          "code": "E1_2",
+          "label": "högört - högört med ris/blåbär"
+        },
+        {
+          "code": "E1_3",
+          "label": "högört - högört med ris/lingon"
+        },
+        {
+          "code": "E2_0",
+          "label": "lågört, ospec"
+        },
+        {
+          "code": "E2_1",
+          "label": "lågört - lågört utan ris"
+        },
+        {
+          "code": "E2_2",
+          "label": "lågört med ris/blåbär"
+        },
+        {
+          "code": "E2_3",
+          "label": "lågört - lågört med ris/lingon"
+        },
+        {
+          "code": "E3_0",
+          "label": "fältskikt saknas"
+        },
+        {
+          "code": "E4_0",
+          "label": "gräs, ospec"
+        },
+        {
+          "code": "E4_1",
+          "label": "gräs - bredbladigt gräs"
+        },
+        {
+          "code": "E4_2",
+          "label": "gräs - smalbladigt gräs"
+        },
+        {
+          "code": "E5_0",
+          "label": "starr, ospec"
+        },
+        {
+          "code": "E5_1",
+          "label": "starr - hög starr"
+        },
+        {
+          "code": "E5_2",
+          "label": "starr - låg starr"
+        },
+        {
+          "code": "E6_0",
+          "label": "fräken"
+        },
+        {
+          "code": "E7_0",
+          "label": "ristyp, ospec"
+        },
+        {
+          "code": "E7_1",
+          "label": "ristyp – blåbär"
+        },
+        {
+          "code": "E7_2",
+          "label": "ristyp – lingon"
+        },
+        {
+          "code": "E7_3",
+          "label": "ristyp - kråkbär/ljung"
+        },
+        {
+          "code": "E7_4",
+          "label": "ristyp – fattigris"
+        }
+      ]
+    },
+    {
+      "name": "WaterManagementClass",
+      "type": "select",
+      "options": [
+        {
+          "code": "VG",
+          "label": "vattenmiljö med generell vattenhänsyn"
+        },
+        {
+          "code": "VF",
+          "label": "vattenmiljö med förstärkt vattenhänsyn"
+        },
+        {
+          "code": "VS",
+          "label": "vattenmiljö med särskilda åtgärder"
+        },
+        {
+          "code": "VO",
+          "label": "vattenmiljö som lämnas orörd"
+        }
       ]
     }
   ]

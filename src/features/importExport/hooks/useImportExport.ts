@@ -18,7 +18,6 @@ import { useLocalization } from "../../../localization";
 import { convertForestandXmlToGeoJson } from "../services/forestandLocal";
 import { ParsedGeoJSON, flattenProperties } from "../types/GeoJson";
 import { normalizeInventoryData } from "../../../features/inventory/storage/inventoryStorage";
-import forestandSiteDefaultMapping from "../config/forestandSiteDefaultMapping.json";
 import { mapForestandFieldName } from "../services/forestandMappingService";
 import { getAttributeOptions } from "../../inventory/services/attributeService";
 
@@ -39,17 +38,7 @@ const calculateArea = (coords: Coordinate[]): number => {
 
 export function useImportExport() {
   const { t } = useLocalization();
-  const siteMapping = forestandSiteDefaultMapping as Record<
-    string,
-    {
-      codeType?: string | null;
-      attributeName?: string | null;
-      codes?: Record<
-        string,
-        { label?: string | null; internal?: { code?: string; label?: string } }
-      >;
-    }
-  >;
+
   const buildInternalAttributesFromSite = (site: any) => {
     if (!site || typeof site !== "object") {
       return {};
@@ -70,41 +59,21 @@ export function useImportExport() {
         continue;
       }
 
-      // Try new mapping system first (POC attributes)
-      let attributeName = mapForestandFieldName(forestandField);
-
-      if (attributeName) {
-        // POC path: Use new attribute master for label lookup
-        const options = getAttributeOptions(attributeName);
-        const option = options.find((o) => o.code === String(code));
-
-        internalAttributes[attributeName] = {
-          code: String(code),
-          label: option?.label || forestandLabel,
-        };
-
-        console.log(
-          `[POC] Mapped ${forestandField} → ${attributeName} (code: ${code})`
-        );
-      } else {
-        // Fallback to old system for non-POC attributes
-        const oldMapping = siteMapping[forestandField];
-        if (!oldMapping?.attributeName) {
-          continue; // Skip unmapped fields
-        }
-
-        attributeName = oldMapping.attributeName;
-        const mappedCodeEntry = oldMapping.codes?.[String(code)];
-        const internal = mappedCodeEntry?.internal;
-        const finalCode = internal?.code ?? String(code);
-        const finalLabel =
-          internal?.label ?? mappedCodeEntry?.label ?? forestandLabel;
-
-        internalAttributes[attributeName] = {
-          code: finalCode,
-          label: finalLabel ?? null,
-        };
+      // Map Forestand field name to internal attribute name
+      const attributeName = mapForestandFieldName(forestandField);
+      if (!attributeName) {
+        // Field not mapped - skip it
+        continue;
       }
+
+      // Look up label from attribute master
+      const options = getAttributeOptions(attributeName);
+      const option = options.find((o) => o.code === String(code));
+
+      internalAttributes[attributeName] = {
+        code: String(code),
+        label: option?.label || forestandLabel,
+      };
     }
 
     return internalAttributes;

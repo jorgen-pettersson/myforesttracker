@@ -2,7 +2,28 @@
   "version": "1.0",
   "source": "Forestand XML Schema",
   "fieldMappings": {
+    "ObsS_ASIO": "ASIO",
+    "ObsS_BearingCapacity": "BearingCapacity",
+    "ObsS_Climate": "Climate",
+    "ObsS_DegeneratedLand": "DegeneratedLand",
+    "ObsS_Ditching": "Ditching",
+    "ObsS_EarlierLandUse": "EarlierLandUse",
+    "ObsS_FrostExposure": "FrostExposure",
+    "ObsS_GroundLayer": "GroundLayer",
+    "ObsS_LateralSoilWater": "LateralSoilWater",
+    "ObsS_ManagementClass": "ManagementClass",
     "ObsS_MaturityClass": "MaturityClass",
-    "ObsS_ManagementClass": "ManagementClass"
+    "ObsS_ParticleFraction": "ParticleFraction",
+    "ObsS_SlopeClass": "Slope",
+    "ObsS_SlopeDirection": "SlopeDirection",
+    "ObsS_Soil": "Soil",
+    "ObsS_SoilDepthClass": "SoilDepth",
+    "ObsS_SoilMoisture": "SoilMoisture",
+    "ObsS_SoilTexture": "SoilTexture",
+    "ObsS_SVLLandUse": "LandUseSVL",
+    "ObsS_SurfaceStructure": "SurfaceStructure",
+    "ObsS_TraditionalLandUse": "LandUseTrad",
+    "ObsS_Vegetation": "Vegetation",
+    "ObsS_WaterManagementClass": "WaterManagementClass"
   }
 }
