@@ -400,10 +400,14 @@ export function ItemModal({
                     if (key === "species") {
                       const speciesValue = item.attributes?.species;
                       const heightValue = item.attributes?.speciesHeight;
-                      const speciesDisplay = formatValue(speciesValue); // e.g., "(1) Tall"
+                      // Extract just the code (e.g., "T" from {code: "T", label: "Tall"})
+                      const speciesCode =
+                        speciesValue && typeof speciesValue === "object"
+                          ? (speciesValue as any).code
+                          : speciesValue;
                       const displayText = heightValue
-                        ? `${speciesDisplay}${heightValue}`
-                        : speciesDisplay;
+                        ? `${speciesCode}${heightValue}`
+                        : speciesCode || "";
 
                       return (
                         <View key={key} style={styles.viewField}>
