@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "attributes": [
+    {
+      "name": "name",
+      "type": "text"
+    },
+    {
+      "name": "notes",
+      "type": "text"
+    },
+    {
+      "name": "areaHa",
+      "type": "number"
+    },
+    {
+      "name": "MaturityClass",
+      "type": "select",
+      "options": [
+        { "code": "K1", "label": "kalmark – åtgärder kvarstår" },
+        { "code": "K2", "label": "kalmark – åtgärder utförda" },
+        { "code": "R1", "label": "röjningsskog – plantskog" },
+        { "code": "R2", "label": "röjningsskog – ungskog" },
+        { "code": "G1", "label": "gallringsskog - yngre gallringsskog" },
+        { "code": "G2", "label": "gallringsskog - äldre gallringsskog" },
+        {
+          "code": "S1",
+          "label": "föryngringsavverkningsskog - kan föryngringsavverkas"
+        },
+        {
+          "code": "S2",
+          "label": "föryngringsavverkningsskog - mogen att föryngringsavverkas"
+        },
+        {
+          "code": "S3",
+          "label": "föryngringsavverkningsskog - mogen att föryngringsavverkas men bör inte föryngringsavverkas av naturvårdsskäl"
+        },
+        { "code": "E1", "label": "lågproducerande skog – restskog" },
+        {
+          "code": "E2",
+          "label": "lågproducerande skog – trädklädd impedimentsmark"
+        },
+        { "code": "E3", "label": "lågproducerande skog – temporärt impediment" }
+      ]
+    },
+    {
+      "name": "ManagementClass",
+      "type": "select",
+      "options": [
+        { "code": "PG", "label": "produktion med generell miljöhänsyn" },
+        { "code": "PF_K", "label": "produktion med förstärkt miljöhänsyn" },
+        { "code": "NS", "label": "naturvård med skötsel" },
+        { "code": "NO", "label": "naturvård utan skötsel" }
+      ]
+    }
+  ]
+}

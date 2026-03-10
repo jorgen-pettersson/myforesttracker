@@ -19,6 +19,8 @@ import { convertForestandXmlToGeoJson } from "../services/forestandLocal";
 import { ParsedGeoJSON, flattenProperties } from "../types/GeoJson";
 import { normalizeInventoryData } from "../../../features/inventory/storage/inventoryStorage";
 import forestandSiteDefaultMapping from "../config/forestandSiteDefaultMapping.json";
+import { mapForestandFieldName } from "../services/forestandMappingService";
+import { getAttributeOptions } from "../../inventory/services/attributeService";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
 const IMPORT_DIR = `${RNFS.CachesDirectoryPath}/import`;
@@ -56,34 +58,55 @@ export function useImportExport() {
       string,
       { code: string; label: string | null }
     > = {};
-    for (const [obsName, value] of Object.entries(site)) {
-      if (obsName === "ObsS_SIS") {
-        continue;
-      }
+
+    for (const [forestandField, value] of Object.entries(site)) {
       if (!value || typeof value !== "object") {
         continue;
       }
+
       const code = (value as any).code;
-      const label = (value as any).label ?? null;
+      const forestandLabel = (value as any).label ?? null;
       if (!code) {
         continue;
       }
 
-      const mapping = siteMapping[obsName];
-      const attributeName =
-        mapping?.attributeName ||
-        (obsName.startsWith("ObsS_") ? obsName.slice(5) : obsName);
+      // Try new mapping system first (POC attributes)
+      let attributeName = mapForestandFieldName(forestandField);
 
-      const mappedCodeEntry = mapping?.codes?.[String(code)];
-      const internal = mappedCodeEntry?.internal;
-      const finalCode = internal?.code ?? String(code);
-      const finalLabel = internal?.label ?? mappedCodeEntry?.label ?? label;
+      if (attributeName) {
+        // POC path: Use new attribute master for label lookup
+        const options = getAttributeOptions(attributeName);
+        const option = options.find((o) => o.code === String(code));
 
-      internalAttributes[attributeName] = {
-        code: finalCode,
-        label: finalLabel ?? null,
-      };
+        internalAttributes[attributeName] = {
+          code: String(code),
+          label: option?.label || forestandLabel,
+        };
+
+        console.log(
+          `[POC] Mapped ${forestandField} → ${attributeName} (code: ${code})`
+        );
+      } else {
+        // Fallback to old system for non-POC attributes
+        const oldMapping = siteMapping[forestandField];
+        if (!oldMapping?.attributeName) {
+          continue; // Skip unmapped fields
+        }
+
+        attributeName = oldMapping.attributeName;
+        const mappedCodeEntry = oldMapping.codes?.[String(code)];
+        const internal = mappedCodeEntry?.internal;
+        const finalCode = internal?.code ?? String(code);
+        const finalLabel =
+          internal?.label ?? mappedCodeEntry?.label ?? forestandLabel;
+
+        internalAttributes[attributeName] = {
+          code: finalCode,
+          label: finalLabel ?? null,
+        };
+      }
     }
+
     return internalAttributes;
   };
   const ensureDir = async (dir: string) => {

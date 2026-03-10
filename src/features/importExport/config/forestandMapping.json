@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "source": "Forestand XML Schema",
+  "fieldMappings": {
+    "ObsS_MaturityClass": "MaturityClass",
+    "ObsS_ManagementClass": "ManagementClass"
+  }
+}

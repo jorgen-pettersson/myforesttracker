@@ -16,6 +16,7 @@ import { MediaGallery } from "./MediaGallery";
 import { formatArea } from "../utils";
 import { useLocalization } from "../localization";
 import forestandSiteDefaultMapping from "../features/importExport/config/forestandSiteDefaultMapping.json";
+import { getAllAttributeOptionsMap } from "../features/inventory/services/attributeService";
 
 const MAX_MEDIA_ITEMS = 5;
 
@@ -60,6 +61,14 @@ export function ItemModal({
   const [showAddHistory, setShowAddHistory] = useState(false);
   const { t } = useLocalization();
   const attributeOptions = useMemo(() => {
+    // New system: Use attribute master (POC attributes)
+    const newOptions = getAllAttributeOptionsMap();
+    console.log(
+      "[POC] Loaded attribute options from master:",
+      Object.keys(newOptions)
+    );
+
+    // Old system: Fallback for non-POC attributes
     const mapping = forestandSiteDefaultMapping as Record<
       string,
       {
@@ -73,11 +82,18 @@ export function ItemModal({
         >;
       }
     >;
-    const result: Record<string, { code: string; label: string | null }[]> = {};
+    const oldOptions: Record<string, { code: string; label: string | null }[]> =
+      {};
     for (const entry of Object.values(mapping)) {
       if (!entry.attributeName || !entry.codes) {
         continue;
       }
+
+      // Skip if already in new system
+      if (newOptions[entry.attributeName]) {
+        continue;
+      }
+
       const options = Object.entries(entry.codes).map(([code, meta]) => ({
         code: String(code),
         label: meta?.label ?? null,
@@ -85,15 +101,16 @@ export function ItemModal({
       if (options.length === 0) {
         continue;
       }
-      if (!result[entry.attributeName]) {
-        result[entry.attributeName] = [];
+      if (!oldOptions[entry.attributeName]) {
+        oldOptions[entry.attributeName] = [];
       }
-      result[entry.attributeName].push(...options);
+      oldOptions[entry.attributeName].push(...options);
     }
 
-    for (const [key, values] of Object.entries(result)) {
+    // Deduplicate old options
+    for (const [key, values] of Object.entries(oldOptions)) {
       const seen = new Set<string>();
-      result[key] = values.filter((option) => {
+      oldOptions[key] = values.filter((option) => {
         if (seen.has(option.code)) {
           return false;
         }
@@ -102,7 +119,8 @@ export function ItemModal({
       });
     }
 
-    return result;
+    // Merge: new system takes precedence
+    return { ...oldOptions, ...newOptions };
   }, []);
 
   const { showMediaPicker, deleteMedia } = useMedia();
