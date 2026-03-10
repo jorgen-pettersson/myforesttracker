@@ -15,7 +15,10 @@ import { useMedia } from "../hooks";
 import { MediaGallery } from "./MediaGallery";
 import { formatArea } from "../utils";
 import { useLocalization } from "../localization";
-import { getAllAttributeOptionsMap } from "../features/inventory/services/attributeService";
+import {
+  getAllAttributeOptionsMap,
+  getAttributeType,
+} from "../features/inventory/services/attributeService";
 
 const MAX_MEDIA_ITEMS = 5;
 
@@ -448,9 +451,14 @@ export function ItemModal({
                   .map((key) => {
                     const value = item.attributes?.[key];
                     const options = attributeOptions[key];
+                    const attributeType = getAttributeType(key);
 
-                    if (key === "areaHa") {
-                      const areaValue =
+                    // Handle number-type attributes
+                    if (
+                      attributeType === "number" ||
+                      typeof value === "number"
+                    ) {
+                      const numValue =
                         typeof value === "number" ? String(value) : value || "";
                       return (
                         <View key={key} style={styles.attributeField}>
@@ -460,7 +468,7 @@ export function ItemModal({
                           <TextInput
                             style={styles.input}
                             keyboardType="numeric"
-                            value={String(areaValue)}
+                            value={String(numValue)}
                             onChangeText={(text) => {
                               const numeric = Number(text);
                               onChangeItem({

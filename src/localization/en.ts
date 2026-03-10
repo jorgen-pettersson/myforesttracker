@@ -152,6 +152,7 @@ export const en = {
   SoilMoisture: "Soil Moisture",
   SoilTexture: "Soil Texture",
   species: "Species",
+  speciesHeight: "Species Height",
   SurfaceStructure: "Surface Structure",
   Vegetation: "Vegetation",
   WaterManagementClass: "Water Management Class",

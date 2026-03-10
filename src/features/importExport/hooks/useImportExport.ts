@@ -43,14 +43,38 @@ export function useImportExport() {
     if (!site || typeof site !== "object") {
       return {};
     }
-    const internalAttributes: Record<
-      string,
-      { code: string; label: string | null }
-    > = {};
+    const internalAttributes: Record<string, any> = {};
 
     for (const [forestandField, value] of Object.entries(site)) {
       if (!value || typeof value !== "object") {
         continue;
+      }
+
+      // Special handling for ObsS_SIS (Site Index with species and height)
+      if (forestandField === "ObsS_SIS") {
+        const spec = (value as any).spec;
+        if (spec) {
+          // Extract species
+          const speciesData = spec.species;
+          if (speciesData?.code) {
+            const speciesOptions = getAttributeOptions("species");
+            const speciesOption = speciesOptions.find(
+              (o) => o.code === String(speciesData.code)
+            );
+            internalAttributes.species = {
+              code: String(speciesData.code),
+              label: speciesOption?.label || speciesData.label || null,
+            };
+          }
+
+          // Extract height (if present)
+          // Note: Height might be in different fields, adjust as needed
+          const height = spec.height || spec.h;
+          if (height) {
+            internalAttributes.speciesHeight = Number(height);
+          }
+        }
+        continue; // Skip regular processing for ObsS_SIS
       }
 
       const code = (value as any).code;

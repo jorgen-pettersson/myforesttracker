@@ -154,6 +154,7 @@ export const sv: Record<TranslationKeys, string> = {
   SoilMoisture: "Markfuktighet",
   SoilTexture: "Jordmån",
   species: "Trädslag",
+  speciesHeight: "Trädhöjd",
   SurfaceStructure: "Ytstruktur",
   Vegetation: "Vegetation",
   WaterManagementClass: "Vattenhushållning",
