@@ -59,8 +59,15 @@ test("selects option by label when code is missing", () => {
     );
   });
 
-  const picker = renderer!.root.findByType("Picker" as any);
-  expect(picker.props.selectedValue).toBe("NS");
+  const pickers = renderer!.root.findAllByType("Picker" as any);
+  // Find the ManagementClass picker (not the "Add Attribute" picker)
+  const picker = pickers.find(
+    (p) =>
+      p.props.selectedValue === "NS" ||
+      p.props.children?.some((c: any) => c?.props?.value === "NS")
+  );
+  expect(picker).toBeTruthy();
+  expect(picker!.props.selectedValue).toBe("NS");
 });
 
 test("selects option by code when label is missing", () => {
@@ -86,6 +93,13 @@ test("selects option by code when label is missing", () => {
     );
   });
 
-  const picker = renderer!.root.findByType("Picker" as any);
-  expect(picker.props.selectedValue).toBe("NO");
+  const pickers = renderer!.root.findAllByType("Picker" as any);
+  // Find the ManagementClass picker (not the "Add Attribute" picker)
+  const picker = pickers.find(
+    (p) =>
+      p.props.selectedValue === "NO" ||
+      p.props.children?.some((c: any) => c?.props?.value === "NO")
+  );
+  expect(picker).toBeTruthy();
+  expect(picker!.props.selectedValue).toBe("NO");
 });

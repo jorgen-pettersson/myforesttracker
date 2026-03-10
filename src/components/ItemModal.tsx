@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -7,6 +13,7 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { Place, HistoryEntry, MediaItem } from "../features/inventory";
@@ -18,7 +25,9 @@ import { useLocalization } from "../localization";
 import {
   getAllAttributeOptionsMap,
   getAttributeType,
+  getSelectAttributes,
 } from "../features/inventory/services/attributeService";
+import { AttributeDefinition } from "../features/inventory/types/attributeSchema";
 
 const MAX_MEDIA_ITEMS = 5;
 
@@ -61,6 +70,8 @@ export function ItemModal({
   const [newHistoryBody, setNewHistoryBody] = useState("");
   const [newHistoryMedia, setNewHistoryMedia] = useState<MediaItem[]>([]);
   const [showAddHistory, setShowAddHistory] = useState(false);
+  const [selectedNewAttribute, setSelectedNewAttribute] =
+    useState<string>("__none__");
   const { t } = useLocalization();
   const attributeOptions = useMemo(() => {
     // Use attribute master for all select attributes
@@ -124,6 +135,101 @@ export function ItemModal({
     }
     // Fallback to the key itself if no translation
     return key;
+  };
+
+  // Helper to get attributes that can be added
+  const getAvailableAttributesToAdd = useCallback((): AttributeDefinition[] => {
+    const allSelectAttributes = getSelectAttributes();
+    const existingKeys = Object.keys(item.attributes || {});
+
+    // Exclude attributes that are:
+    // - Already on this item
+    // - Builtin (handled separately)
+    // - Special/auto-managed
+    const excludeFromAdding = [
+      "name",
+      "notes",
+      "areaHa",
+      "color",
+      "parentPlaceId",
+      "speciesHeight", // Added automatically with species
+    ];
+
+    return allSelectAttributes.filter(
+      (attr) =>
+        !existingKeys.includes(attr.name) &&
+        !excludeFromAdding.includes(attr.name)
+    );
+  }, [item.attributes]);
+
+  // Helper to add a new attribute
+  const addNewAttribute = useCallback(
+    (attributeName: string) => {
+      if (!attributeName || attributeName === "__none__") {
+        return;
+      }
+
+      // Special case: species composite - add both fields
+      if (attributeName === "species") {
+        onChangeItem({
+          ...item,
+          attributes: {
+            ...item.attributes,
+            species: undefined,
+            speciesHeight: undefined,
+          },
+        });
+        setSelectedNewAttribute("__none__");
+        return;
+      }
+
+      // For all other attributes, add with undefined (user must set value)
+      onChangeItem({
+        ...item,
+        attributes: {
+          ...item.attributes,
+          [attributeName]: undefined,
+        },
+      });
+
+      setSelectedNewAttribute("__none__");
+    },
+    [item, onChangeItem]
+  );
+
+  // Helper to remove an attribute
+  const removeAttribute = useCallback(
+    (attributeName: string) => {
+      Alert.alert(t("removeAttribute"), t("confirmRemoveAttribute"), [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: t("delete"),
+          style: "destructive",
+          onPress: () => {
+            const newAttributes = { ...item.attributes };
+            delete newAttributes[attributeName];
+
+            // Special case: if removing species, also remove speciesHeight
+            if (attributeName === "species") {
+              delete newAttributes.speciesHeight;
+            }
+
+            onChangeItem({
+              ...item,
+              attributes: newAttributes,
+            });
+          },
+        },
+      ]);
+    },
+    [item, onChangeItem, t]
+  );
+
+  // Helper to check if attribute is removable
+  const isAttributeRemovable = (attributeName: string): boolean => {
+    // Can't remove required/builtin attributes
+    const nonRemovable = ["name", "notes", "areaHa", "color", "parentPlaceId"];
+    return !nonRemovable.includes(attributeName);
   };
 
   // Recursively render properties with support for nested objects
@@ -540,9 +646,40 @@ export function ItemModal({
                           key="species-composite"
                           style={styles.attributeField}
                         >
-                          <Text style={styles.label}>
-                            {getAttributeName("species")}
-                          </Text>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Text style={styles.label}>
+                              {getAttributeName("species")}
+                            </Text>
+                            {isAttributeRemovable("species") && (
+                              <TouchableOpacity
+                                onPress={() => removeAttribute("species")}
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 14,
+                                  backgroundColor: "#FF3B30",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    color: "#FFFFFF",
+                                    fontSize: 20,
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  ×
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
 
                           {/* Species picker */}
                           <View style={styles.pickerWrapper}>
@@ -641,9 +778,40 @@ export function ItemModal({
                         typeof value === "number" ? String(value) : value || "";
                       return (
                         <View key={key} style={styles.attributeField}>
-                          <Text style={styles.label}>
-                            {getAttributeName(key)}
-                          </Text>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Text style={styles.label}>
+                              {getAttributeName(key)}
+                            </Text>
+                            {isAttributeRemovable(key) && (
+                              <TouchableOpacity
+                                onPress={() => removeAttribute(key)}
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 14,
+                                  backgroundColor: "#FF3B30",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    color: "#FFFFFF",
+                                    fontSize: 20,
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  ×
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
                           <TextInput
                             style={styles.input}
                             keyboardType="numeric"
@@ -714,9 +882,40 @@ export function ItemModal({
 
                       return (
                         <View key={key} style={styles.attributeField}>
-                          <Text style={styles.label}>
-                            {getAttributeName(key)}
-                          </Text>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Text style={styles.label}>
+                              {getAttributeName(key)}
+                            </Text>
+                            {isAttributeRemovable(key) && (
+                              <TouchableOpacity
+                                onPress={() => removeAttribute(key)}
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 14,
+                                  backgroundColor: "#FF3B30",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    color: "#FFFFFF",
+                                    fontSize: 20,
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  ×
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
                           <View style={styles.pickerWrapper}>
                             <Picker
                               key={`picker-${key}`}
@@ -840,6 +1039,50 @@ export function ItemModal({
                       </View>
                     );
                   })}
+
+                {/* Add Attribute Picker */}
+                {(() => {
+                  const availableToAdd = getAvailableAttributesToAdd();
+                  if (availableToAdd.length === 0) {
+                    return null; // All attributes already added
+                  }
+
+                  return (
+                    <View style={styles.attributeField}>
+                      <Text style={styles.label}>{t("addAttribute")}</Text>
+                      <View style={styles.pickerWrapper}>
+                        <Picker
+                          selectedValue={selectedNewAttribute}
+                          mode="dropdown"
+                          style={{ height: 50, width: "100%", color: "#000" }}
+                          onValueChange={(attrName) => {
+                            if (attrName && attrName !== "__none__") {
+                              addNewAttribute(attrName);
+                            }
+                          }}
+                        >
+                          <Picker.Item
+                            label={t("selectAttributeToAdd")}
+                            value="__none__"
+                          />
+                          {availableToAdd
+                            .sort((a, b) =>
+                              getAttributeName(a.name).localeCompare(
+                                getAttributeName(b.name)
+                              )
+                            )
+                            .map((attr) => (
+                              <Picker.Item
+                                key={attr.name}
+                                label={getAttributeName(attr.name)}
+                                value={attr.name}
+                              />
+                            ))}
+                        </Picker>
+                      </View>
+                    </View>
+                  );
+                })()}
               </View>
             )}
 

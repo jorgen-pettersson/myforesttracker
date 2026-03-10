@@ -157,6 +157,12 @@ export const en = {
   Vegetation: "Vegetation",
   WaterManagementClass: "Water Management Class",
   areaHa: "Area (ha)",
+
+  // Add/Remove attributes
+  addAttribute: "Add Attribute",
+  selectAttributeToAdd: "Select attribute to add...",
+  removeAttribute: "Remove attribute",
+  confirmRemoveAttribute: "Remove this attribute?",
 };
 
 export type TranslationKeys = keyof typeof en;

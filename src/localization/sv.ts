@@ -159,4 +159,10 @@ export const sv: Record<TranslationKeys, string> = {
   Vegetation: "Vegetation",
   WaterManagementClass: "Vattenhushållning",
   areaHa: "Yta (ha)",
+
+  // Add/Remove attributes
+  addAttribute: "Lägg till attribut",
+  selectAttributeToAdd: "Välj attribut att lägga till...",
+  removeAttribute: "Ta bort attribut",
+  confirmRemoveAttribute: "Ta bort detta attribut?",
 };
