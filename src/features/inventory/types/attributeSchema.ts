@@ -35,10 +35,30 @@ export interface AttributeMaster {
 }
 
 /**
+ * Mapping configuration for a single Forestand field
+ */
+export interface ForestandFieldMapping {
+  mapping: string; // Internal attribute name
+  codeTransformations: Record<string, string>; // Forestand code → Internal code
+}
+
+/**
+ * Special case handling configuration
+ */
+export interface SpecialCaseMapping {
+  description: string;
+  mapsTo: string[]; // Array of internal attribute names
+  useTransformationsFrom?: string; // Reference to another field's transformations
+  extraction?: Record<string, string>; // Attribute → extraction description
+}
+
+/**
  * Forestand field to internal attribute mapping
  */
 export interface ForestandMapping {
   version: string;
   source: string;
-  fieldMappings: Record<string, string>; // Forestand field name → Internal attribute name
+  description?: string;
+  fieldMappings: Record<string, ForestandFieldMapping>; // Forestand field → mapping config
+  specialCases?: Record<string, SpecialCaseMapping>; // Special handling documentation
 }

@@ -2,7 +2,10 @@ import "react-native-get-random-values";
 import proj4 from "proj4";
 import { XMLParser } from "fast-xml-parser";
 import { v4 as uuidv4 } from "uuid";
-import { mapForestandFieldName } from "./forestandMappingService";
+import {
+  mapForestandFieldName,
+  transformForestandCode,
+} from "./forestandMappingService";
 import { getAttributeOptions } from "../../inventory/services/attributeService";
 
 const EPSG_4326 = "EPSG:4326";
@@ -24,16 +27,19 @@ const parser = new XMLParser({
   parseAttributeValue: false,
 });
 
-const resolveSiteLabel = (forestandField: string, code: string) => {
+const resolveSiteLabel = (forestandField: string, forestandCode: string) => {
   // Map Forestand field to internal attribute name
   const attributeName = mapForestandFieldName(forestandField);
   if (!attributeName) {
     return null;
   }
 
-  // Look up label from attribute master
+  // Transform code: Forestand → Internal
+  const internalCode = transformForestandCode(forestandField, forestandCode);
+
+  // Look up label from attribute master using internal code
   const options = getAttributeOptions(attributeName);
-  const option = options.find((o) => o.code === code);
+  const option = options.find((o) => o.code === internalCode);
   return option?.label || null;
 };
 

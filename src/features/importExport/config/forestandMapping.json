@@ -1,29 +1,298 @@
 {
   "version": "1.0",
   "source": "Forestand XML Schema",
+  "description": "Maps Forestand fields to internal attributes with explicit code transformations. All codes listed even when passthrough (Forestand code = Internal code) for validation and documentation purposes.",
   "fieldMappings": {
-    "ObsS_ASIO": "ASIO",
-    "ObsS_BearingCapacity": "BearingCapacity",
-    "ObsS_Climate": "Climate",
-    "ObsS_DegeneratedLand": "DegeneratedLand",
-    "ObsS_Ditching": "Ditching",
-    "ObsS_EarlierLandUse": "EarlierLandUse",
-    "ObsS_FrostExposure": "FrostExposure",
-    "ObsS_GroundLayer": "GroundLayer",
-    "ObsS_LateralSoilWater": "LateralSoilWater",
-    "ObsS_ManagementClass": "ManagementClass",
-    "ObsS_MaturityClass": "MaturityClass",
-    "ObsS_ParticleFraction": "ParticleFraction",
-    "ObsS_SlopeClass": "Slope",
-    "ObsS_SlopeDirection": "SlopeDirection",
-    "ObsS_Soil": "Soil",
-    "ObsS_SoilDepthClass": "SoilDepth",
-    "ObsS_SoilMoisture": "SoilMoisture",
-    "ObsS_SoilTexture": "SoilTexture",
-    "ObsS_SVLLandUse": "LandUseSVL",
-    "ObsS_SurfaceStructure": "SurfaceStructure",
-    "ObsS_TraditionalLandUse": "LandUseTrad",
-    "ObsS_Vegetation": "Vegetation",
-    "ObsS_WaterManagementClass": "WaterManagementClass"
+    "ObsS_ASIO": {
+      "mapping": "ASIO",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4"
+      }
+    },
+    "ObsS_BearingCapacity": {
+      "mapping": "BearingCapacity",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4",
+        "E5": "E5"
+      }
+    },
+    "ObsS_Climate": {
+      "mapping": "Climate",
+      "codeTransformations": {
+        "E0": "E0",
+        "M1": "M1",
+        "M2": "M2",
+        "M3": "M3",
+        "K1": "K1",
+        "K2": "K2",
+        "K3": "K3"
+      }
+    },
+    "ObsS_DegeneratedLand": {
+      "mapping": "DegeneratedLand",
+      "codeTransformations": {
+        "E0": "E0",
+        "E1": "E1"
+      }
+    },
+    "ObsS_Ditching": {
+      "mapping": "Ditching",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4",
+        "E5": "E5",
+        "E6": "E6"
+      }
+    },
+    "ObsS_EarlierLandUse": {
+      "mapping": "EarlierLandUse",
+      "codeTransformations": {
+        "E0": "E0",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4",
+        "E5": "E5",
+        "E6": "E6",
+        "E7": "E7",
+        "E8": "E8"
+      }
+    },
+    "ObsS_FrostExposure": {
+      "mapping": "FrostExposure",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3"
+      }
+    },
+    "ObsS_GroundLayer": {
+      "mapping": "GroundLayer",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4",
+        "E5": "E5",
+        "E6": "E6",
+        "E7": "E7"
+      }
+    },
+    "ObsS_LateralSoilWater": {
+      "mapping": "LateralSoilWater",
+      "codeTransformations": {
+        "S": "S",
+        "K": "K",
+        "L": "L"
+      }
+    },
+    "ObsS_ManagementClass": {
+      "mapping": "ManagementClass",
+      "codeTransformations": {
+        "PG": "PG",
+        "PF_K": "PF_K",
+        "NS": "NS",
+        "NO": "NO"
+      }
+    },
+    "ObsS_MaturityClass": {
+      "mapping": "MaturityClass",
+      "codeTransformations": {
+        "K1": "K1",
+        "K2": "K2",
+        "R1": "R1",
+        "R2": "R2",
+        "G1": "G1",
+        "G2": "G2",
+        "S1": "S1",
+        "S2": "S2",
+        "S3": "S3",
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3"
+      }
+    },
+    "ObsS_ParticleFraction": {
+      "mapping": "ParticleFraction",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3"
+      }
+    },
+    "ObsS_SVLLandUse": {
+      "mapping": "LandUseSVL",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E2_1": "E2_1",
+        "E2_2": "E2_2",
+        "E3": "E3"
+      }
+    },
+    "ObsS_SlopeClass": {
+      "mapping": "Slope",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4",
+        "E5": "E5"
+      }
+    },
+    "ObsS_SlopeDirection": {
+      "mapping": "SlopeDirection",
+      "codeTransformations": {
+        "E01": "E01",
+        "E12": "E12",
+        "E02": "E02",
+        "E32": "E32",
+        "E03": "E03",
+        "E34": "E34",
+        "E04": "E04",
+        "E14": "E14",
+        "E0": "E0",
+        "E5": "E5"
+      }
+    },
+    "ObsS_Soil": {
+      "mapping": "Soil",
+      "codeTransformations": {
+        "E0": "E0",
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4",
+        "E5": "E5",
+        "E6": "E6"
+      }
+    },
+    "ObsS_SoilDepthClass": {
+      "mapping": "SoilDepth",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4"
+      }
+    },
+    "ObsS_SoilMoisture": {
+      "mapping": "SoilMoisture",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4",
+        "E5": "E5"
+      }
+    },
+    "ObsS_SoilTexture": {
+      "mapping": "SoilTexture",
+      "codeTransformations": {
+        "GR": "GR",
+        "SA": "SA",
+        "SM": "SM",
+        "FM": "FM"
+      }
+    },
+    "ObsS_Species": {
+      "mapping": "species",
+      "codeTransformations": {
+        "1": "T",
+        "2": "G",
+        "3": "B",
+        "10": "C",
+        "20": "E",
+        "21": "F"
+      }
+    },
+    "ObsS_SurfaceStructure": {
+      "mapping": "SurfaceStructure",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2": "E2",
+        "E3": "E3",
+        "E4": "E4",
+        "E5": "E5"
+      }
+    },
+    "ObsS_TraditionalLandUse": {
+      "mapping": "LandUseTrad",
+      "codeTransformations": {
+        "E1": "E1",
+        "E2_0": "E2_0",
+        "E2_1": "E2_1",
+        "E2_2": "E2_2",
+        "E2_3": "E2_3",
+        "E2_4": "E2_4",
+        "E3_0": "E3_0",
+        "E3_1": "E3_1",
+        "E3_2": "E3_2",
+        "E4_0": "E4_0",
+        "E4_1": "E4_1",
+        "E4_2": "E4_2",
+        "E5_0": "E5_0",
+        "E5_1": "E5_1",
+        "E5_2": "E5_2",
+        "E5_3": "E5_3",
+        "E5_4": "E5_4"
+      }
+    },
+    "ObsS_Vegetation": {
+      "mapping": "Vegetation",
+      "codeTransformations": {
+        "E1_0": "E1_0",
+        "E1_1": "E1_1",
+        "E1_2": "E1_2",
+        "E1_3": "E1_3",
+        "E2_0": "E2_0",
+        "E2_1": "E2_1",
+        "E2_2": "E2_2",
+        "E2_3": "E2_3",
+        "E3_0": "E3_0",
+        "E4_0": "E4_0",
+        "E4_1": "E4_1",
+        "E4_2": "E4_2",
+        "E5_0": "E5_0",
+        "E5_1": "E5_1",
+        "E5_2": "E5_2",
+        "E6_0": "E6_0",
+        "E7_0": "E7_0",
+        "E7_1": "E7_1",
+        "E7_2": "E7_2",
+        "E7_3": "E7_3",
+        "E7_4": "E7_4"
+      }
+    },
+    "ObsS_WaterManagementClass": {
+      "mapping": "WaterManagementClass",
+      "codeTransformations": {
+        "VG": "VG",
+        "VF": "VF",
+        "VS": "VS",
+        "VO": "VO"
+      }
+    }
+  },
+  "specialCases": {
+    "ObsS_SIS": {
+      "description": "Site Index - Complex nested structure requiring special extraction logic",
+      "mapsTo": [
+        "species",
+        "speciesHeight"
+      ],
+      "useTransformationsFrom": "ObsS_Species",
+      "extraction": {
+        "species": "spec.species.code (transformed via ObsS_Species codeTransformations)",
+        "speciesHeight": "result.code (numeric passthrough)"
+      }
+    }
   }
 }

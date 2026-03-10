@@ -18,7 +18,10 @@ import { useLocalization } from "../../../localization";
 import { convertForestandXmlToGeoJson } from "../services/forestandLocal";
 import { ParsedGeoJSON, flattenProperties } from "../types/GeoJson";
 import { normalizeInventoryData } from "../../../features/inventory/storage/inventoryStorage";
-import { mapForestandFieldName } from "../services/forestandMappingService";
+import {
+  mapForestandFieldName,
+  transformForestandCode,
+} from "../services/forestandMappingService";
 import { getAttributeOptions } from "../../inventory/services/attributeService";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
@@ -61,27 +64,34 @@ export function useImportExport() {
           }
         }
 
-        // Extract species from spec
+        // Extract species from spec WITH code transformation
         const spec = (value as any).spec;
-        if (spec) {
-          const speciesData = spec.species;
-          if (speciesData?.code) {
-            const speciesOptions = getAttributeOptions("species");
-            const speciesOption = speciesOptions.find(
-              (o) => o.code === String(speciesData.code)
-            );
-            internalAttributes.species = {
-              code: String(speciesData.code),
-              label: speciesOption?.label || speciesData.label || null,
-            };
-          }
+        if (spec?.species?.code) {
+          const forestandSpeciesCode = String(spec.species.code);
+
+          // Transform: Forestand species code → Internal species code
+          // Uses ObsS_Species transformations (1→T, 2→G, etc.)
+          const internalSpeciesCode = transformForestandCode(
+            "ObsS_Species",
+            forestandSpeciesCode
+          );
+
+          const speciesOptions = getAttributeOptions("species");
+          const speciesOption = speciesOptions.find(
+            (o) => o.code === internalSpeciesCode
+          );
+
+          internalAttributes.species = {
+            code: internalSpeciesCode,
+            label: speciesOption?.label || null,
+          };
         }
         continue; // Skip regular processing for ObsS_SIS
       }
 
-      const code = (value as any).code;
+      const forestandCode = (value as any).code;
       const forestandLabel = (value as any).label ?? null;
-      if (!code) {
+      if (!forestandCode) {
         continue;
       }
 
@@ -92,12 +102,18 @@ export function useImportExport() {
         continue;
       }
 
-      // Look up label from attribute master
+      // Transform code: Forestand → Internal
+      const internalCode = transformForestandCode(
+        forestandField,
+        String(forestandCode)
+      );
+
+      // Look up label from attribute master using internal code
       const options = getAttributeOptions(attributeName);
-      const option = options.find((o) => o.code === String(code));
+      const option = options.find((o) => o.code === String(internalCode));
 
       internalAttributes[attributeName] = {
-        code: String(code),
+        code: String(internalCode),
         label: option?.label || forestandLabel,
       };
     }

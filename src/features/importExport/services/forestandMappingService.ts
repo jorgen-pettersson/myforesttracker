@@ -6,14 +6,29 @@
  */
 
 import forestandMapping from "../config/forestandMapping.json";
-import { ForestandMapping } from "../../inventory/types/attributeSchema";
+import {
+  ForestandMapping,
+  ForestandFieldMapping,
+} from "../../inventory/types/attributeSchema";
 
 /**
- * Load Forestand mapping configuration
+ * Load complete Forestand mapping configuration
  */
-export function getForestandMapping(): Record<string, string> {
-  const mapping = forestandMapping as ForestandMapping;
-  return mapping.fieldMappings;
+export function getForestandMapping(): ForestandMapping {
+  return forestandMapping as ForestandMapping;
+}
+
+/**
+ * Get mapping configuration for a specific Forestand field
+ *
+ * @param forestandField - Forestand XML field name (e.g., "ObsS_MaturityClass")
+ * @returns Field mapping configuration or null if not mapped
+ */
+export function getForestandFieldMapping(
+  forestandField: string
+): ForestandFieldMapping | null {
+  const mapping = getForestandMapping();
+  return mapping.fieldMappings[forestandField] || null;
 }
 
 /**
@@ -24,8 +39,43 @@ export function getForestandMapping(): Record<string, string> {
  * @returns Internal attribute name (e.g., "MaturityClass") or null if not mapped
  */
 export function mapForestandFieldName(forestandField: string): string | null {
-  const mappings = getForestandMapping();
-  return mappings[forestandField] || null;
+  const fieldMapping = getForestandFieldMapping(forestandField);
+  return fieldMapping?.mapping || null;
+}
+
+/**
+ * Transform a Forestand code to internal code
+ * Returns original code if no transformation defined (passthrough)
+ *
+ * @param forestandField - Forestand XML field name
+ * @param forestandCode - Code from Forestand XML
+ * @returns Transformed internal code
+ */
+export function transformForestandCode(
+  forestandField: string,
+  forestandCode: string
+): string {
+  const fieldMapping = getForestandFieldMapping(forestandField);
+
+  if (!fieldMapping?.codeTransformations) {
+    // No transformations defined - passthrough with warning
+    console.warn(
+      `[ForestandMapping] No code transformations for ${forestandField}, using passthrough`
+    );
+    return forestandCode;
+  }
+
+  const internalCode = fieldMapping.codeTransformations[forestandCode];
+
+  if (!internalCode) {
+    // Code not in transformation map - passthrough with warning
+    console.warn(
+      `[ForestandMapping] Code ${forestandCode} not in transformation map for ${forestandField}, using passthrough`
+    );
+    return forestandCode;
+  }
+
+  return internalCode;
 }
 
 /**
@@ -39,16 +89,48 @@ export function shouldProcessField(forestandField: string): boolean {
 }
 
 /**
+ * Check if a field has code transformations defined
+ */
+export function hasCodeTransformations(forestandField: string): boolean {
+  const fieldMapping = getForestandFieldMapping(forestandField);
+  return !!fieldMapping?.codeTransformations;
+}
+
+/**
+ * Get all valid Forestand codes for a field
+ * Useful for validation
+ */
+export function getValidForestandCodes(forestandField: string): string[] {
+  const fieldMapping = getForestandFieldMapping(forestandField);
+  return fieldMapping?.codeTransformations
+    ? Object.keys(fieldMapping.codeTransformations)
+    : [];
+}
+
+/**
+ * Validate that a Forestand code is valid for a field
+ */
+export function validateForestandCode(
+  forestandField: string,
+  forestandCode: string
+): boolean {
+  const validCodes = getValidForestandCodes(forestandField);
+  return validCodes.length === 0 || validCodes.includes(forestandCode);
+}
+
+/**
  * Get all mapped Forestand field names
  * Useful for debugging and validation
  */
 export function getMappedForestandFields(): string[] {
-  return Object.keys(getForestandMapping());
+  const mapping = getForestandMapping();
+  return Object.keys(mapping.fieldMappings);
 }
 
 /**
  * Get all internal attribute names that Forestand can map to
  */
 export function getMappedAttributeNames(): string[] {
-  return Object.values(getForestandMapping());
+  const mapping = getForestandMapping();
+  return Object.values(mapping.fieldMappings).map((fm) => fm.mapping);
 }
