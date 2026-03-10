@@ -2,7 +2,8 @@ import "react-native-get-random-values";
 import proj4 from "proj4";
 import { XMLParser } from "fast-xml-parser";
 import { v4 as uuidv4 } from "uuid";
-import forestandSiteDefaultMapping from "../config/forestandSiteDefaultMapping.json";
+import { mapForestandFieldName } from "./forestandMappingService";
+import { getAttributeOptions } from "../../inventory/services/attributeService";
 
 const EPSG_4326 = "EPSG:4326";
 const DEFAULT_SOURCE_CRS = "EPSG:3006";
@@ -23,25 +24,17 @@ const parser = new XMLParser({
   parseAttributeValue: false,
 });
 
-const siteMapping = forestandSiteDefaultMapping as Record<
-  string,
-  {
-    codeType?: string | null;
-    attributeName?: string | null;
-    codes?: Record<string, { label?: string | null }>;
+const resolveSiteLabel = (forestandField: string, code: string) => {
+  // Map Forestand field to internal attribute name
+  const attributeName = mapForestandFieldName(forestandField);
+  if (!attributeName) {
+    return null;
   }
->;
 
-const resolveSiteLabel = (obsName: string, code: string) => {
-  const entry = siteMapping[obsName];
-  if (!entry || !entry.codes) {
-    return null;
-  }
-  const codeEntry = entry.codes[code];
-  if (!codeEntry) {
-    return null;
-  }
-  return codeEntry.label ?? null;
+  // Look up label from attribute master
+  const options = getAttributeOptions(attributeName);
+  const option = options.find((o) => o.code === code);
+  return option?.label || null;
 };
 
 const ensureArray = <T>(value: T | T[] | undefined | null): T[] => {
