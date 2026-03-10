@@ -767,25 +767,12 @@
       "name": "species",
       "type": "select",
       "options": [
-        { "code": "1", "label": "Tall" },
-        { "code": "2", "label": "Gran" },
-        { "code": "3", "label": "Björk" },
-        { "code": "10", "label": "Contortatall" },
-        { "code": "11", "label": "Lärk" },
-        { "code": "20", "label": "Ek" },
-        { "code": "21", "label": "Bok" },
-        { "code": "22", "label": "Ask" },
-        { "code": "23", "label": "Alm" },
-        { "code": "24", "label": "Lönn" },
-        { "code": "25", "label": "Lind" },
-        { "code": "26", "label": "Fågelbär" },
-        { "code": "30", "label": "Asp" },
-        { "code": "31", "label": "Al" },
-        { "code": "32", "label": "Sälg" },
-        { "code": "33", "label": "Rönn" },
-        { "code": "40", "label": "Hybridasp" },
-        { "code": "50", "label": "Ädellöv" },
-        { "code": "51", "label": "Triviallöv" }
+        { "code": "T", "label": "Tall" },
+        { "code": "G", "label": "Gran" },
+        { "code": "B", "label": "Björk" },
+        { "code": "C", "label": "Contortatall" },
+        { "code": "E", "label": "Ek" },
+        { "code": "F", "label": "Bok" }
       ]
     },
     {
