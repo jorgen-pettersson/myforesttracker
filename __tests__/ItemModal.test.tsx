@@ -41,7 +41,9 @@ test("selects option by label when code is missing", () => {
     ...createBaseItem(),
     attributes: {
       ...createBaseItem().attributes,
-      ManagementClass: { label: "naturv\u00e5rd med sk\u00f6tsel" },
+      site: {
+        ManagementClass: { label: "naturv\u00e5rd med sk\u00f6tsel" },
+      },
     },
   };
 
@@ -75,7 +77,9 @@ test("selects option by code when label is missing", () => {
     ...createBaseItem(),
     attributes: {
       ...createBaseItem().attributes,
-      ManagementClass: { code: "NO" },
+      site: {
+        ManagementClass: { code: "NO" },
+      },
     },
   };
 

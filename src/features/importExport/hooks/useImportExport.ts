@@ -309,7 +309,7 @@ export function useImportExport() {
       // Write JSON
       if (format === "json" || format === "all") {
         const jsonData = JSON.stringify(
-          { version: 3, places: exportPlaces },
+          { version: 4, places: exportPlaces },
           null,
           2
         );
@@ -788,7 +788,7 @@ export function useImportExport() {
         : Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
       if (feature.geometry.type === "Point") {
-        const internalAttributes = buildInternalAttributesFromSite(
+        const siteAttributes = buildInternalAttributesFromSite(
           props?.forestand?.site
         );
         const point: Place = {
@@ -801,7 +801,9 @@ export function useImportExport() {
           attributes: {
             name: name || undefined,
             notes: notes || undefined,
-            ...internalAttributes,
+            ...(Object.keys(siteAttributes).length > 0
+              ? { site: siteAttributes }
+              : {}),
           },
           geometries: [
             {
@@ -823,12 +825,14 @@ export function useImportExport() {
         const rings = feature.geometry.coordinates;
         const areaItem = processPolygon(rings, baseId, name, notes, props, now);
         if (areaItem) {
-          const internalAttributes = buildInternalAttributesFromSite(
+          const siteAttributes = buildInternalAttributesFromSite(
             props?.forestand?.site
           );
           areaItem.attributes = {
             ...areaItem.attributes,
-            ...internalAttributes,
+            ...(Object.keys(siteAttributes).length > 0
+              ? { site: siteAttributes }
+              : {}),
           };
           items.push(
             existingPlace ? mergeDuplicate(existingPlace, areaItem) : areaItem
@@ -858,12 +862,14 @@ export function useImportExport() {
           media: [],
           properties: props,
         };
-        const internalAttributes = buildInternalAttributesFromSite(
+        const siteAttributes = buildInternalAttributesFromSite(
           props?.forestand?.site
         );
         areaItem.attributes = {
           ...areaItem.attributes,
-          ...internalAttributes,
+          ...(Object.keys(siteAttributes).length > 0
+            ? { site: siteAttributes }
+            : {}),
         };
         items.push(
           existingPlace ? mergeDuplicate(existingPlace, areaItem) : areaItem

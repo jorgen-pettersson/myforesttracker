@@ -140,7 +140,7 @@ export function ItemModal({
   // Helper to get attributes that can be added
   const getAvailableAttributesToAdd = useCallback((): AttributeDefinition[] => {
     const allSelectAttributes = getSelectAttributes();
-    const existingKeys = Object.keys(item.attributes || {});
+    const existingKeys = Object.keys(item.attributes?.site || {});
 
     // Exclude attributes that are:
     // - Already on this item
@@ -175,20 +175,26 @@ export function ItemModal({
           ...item,
           attributes: {
             ...item.attributes,
-            species: undefined,
-            speciesHeight: undefined,
+            site: {
+              ...item.attributes?.site,
+              species: undefined,
+              speciesHeight: undefined,
+            },
           },
         });
         setSelectedNewAttribute("__none__");
         return;
       }
 
-      // For all other attributes, add with undefined (user must set value)
+      // For all other attributes, add to site with undefined (user must set value)
       onChangeItem({
         ...item,
         attributes: {
           ...item.attributes,
-          [attributeName]: undefined,
+          site: {
+            ...item.attributes?.site,
+            [attributeName]: undefined,
+          },
         },
       });
 
@@ -206,17 +212,20 @@ export function ItemModal({
           text: t("delete"),
           style: "destructive",
           onPress: () => {
-            const newAttributes = { ...item.attributes };
-            delete newAttributes[attributeName];
+            const newSiteAttributes = { ...item.attributes?.site };
+            delete newSiteAttributes[attributeName];
 
             // Special case: if removing species, also remove speciesHeight
             if (attributeName === "species") {
-              delete newAttributes.speciesHeight;
+              delete newSiteAttributes.speciesHeight;
             }
 
             onChangeItem({
               ...item,
-              attributes: newAttributes,
+              attributes: {
+                ...item.attributes,
+                site: newSiteAttributes,
+              },
             });
           },
         },
@@ -493,87 +502,90 @@ export function ItemModal({
               )}
 
             {/* Attributes - read-only view for areas */}
-            {isViewMode && item.placeType === "Place_Area" && (
-              <View style={styles.attributesSection}>
-                <Text style={styles.viewLabel}>{t("attributes")}</Text>
-                {Object.keys(item.attributes || {})
-                  .filter((key) => !["name", "notes", "color"].includes(key))
-                  .sort()
-                  .map((key) => {
-                    const value = item.attributes?.[key];
+            {isViewMode &&
+              item.placeType === "Place_Area" &&
+              item.attributes?.site && (
+                <View style={styles.attributesSection}>
+                  <Text style={styles.viewLabel}>{t("attributes")}</Text>
+                  {Object.keys(item.attributes.site)
+                    .sort()
+                    .map((key) => {
+                      const value = item.attributes?.site?.[key];
 
-                    // Special handling for species composite in view mode
-                    if (key === "species") {
-                      const speciesValue = item.attributes?.species;
-                      const heightValue = item.attributes?.speciesHeight;
-                      // Extract just the code (e.g., "T" from {code: "T", label: "Tall"})
-                      const speciesCode =
-                        speciesValue && typeof speciesValue === "object"
-                          ? (speciesValue as any).code
-                          : speciesValue;
-                      const displayText = heightValue
-                        ? `${speciesCode}${heightValue}`
-                        : speciesCode || "";
+                      // Special handling for species composite in view mode
+                      if (key === "species") {
+                        const speciesValue = item.attributes?.species;
+                        const heightValue = item.attributes?.speciesHeight;
+                        // Extract just the code (e.g., "T" from {code: "T", label: "Tall"})
+                        const speciesCode =
+                          speciesValue && typeof speciesValue === "object"
+                            ? (speciesValue as any).code
+                            : speciesValue;
+                        const displayText = heightValue
+                          ? `${speciesCode}${heightValue}`
+                          : speciesCode || "";
 
+                        return (
+                          <View key={key} style={styles.viewField}>
+                            <Text style={styles.propertyKey}>
+                              {getAttributeName(key)}:
+                            </Text>
+                            <Text style={styles.propertyValue}>
+                              {displayText}
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      // Skip speciesHeight (already rendered with species)
+                      if (key === "speciesHeight") {
+                        return null;
+                      }
+
+                      if (key === "areaHa") {
+                        return (
+                          <View key={key} style={styles.viewField}>
+                            <Text style={styles.propertyKey}>
+                              {getAttributeName(key)}:
+                            </Text>
+                            <Text style={styles.propertyValue}>
+                              {typeof value === "number"
+                                ? value.toFixed(2)
+                                : value || ""}
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      // Handle attributes with code/label objects
+                      if (value && typeof value === "object") {
+                        const displayValue = formatValue(value);
+                        return (
+                          <View key={key} style={styles.viewField}>
+                            <Text style={styles.propertyKey}>
+                              {getAttributeName(key)}:
+                            </Text>
+                            <Text style={styles.propertyValue}>
+                              {displayValue}
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      // Handle simple string/number values
                       return (
                         <View key={key} style={styles.viewField}>
                           <Text style={styles.propertyKey}>
                             {getAttributeName(key)}:
                           </Text>
                           <Text style={styles.propertyValue}>
-                            {displayText}
+                            {value || ""}
                           </Text>
                         </View>
                       );
-                    }
-
-                    // Skip speciesHeight (already rendered with species)
-                    if (key === "speciesHeight") {
-                      return null;
-                    }
-
-                    if (key === "areaHa") {
-                      return (
-                        <View key={key} style={styles.viewField}>
-                          <Text style={styles.propertyKey}>
-                            {getAttributeName(key)}:
-                          </Text>
-                          <Text style={styles.propertyValue}>
-                            {typeof value === "number"
-                              ? value.toFixed(2)
-                              : value || ""}
-                          </Text>
-                        </View>
-                      );
-                    }
-
-                    // Handle attributes with code/label objects
-                    if (value && typeof value === "object") {
-                      const displayValue = formatValue(value);
-                      return (
-                        <View key={key} style={styles.viewField}>
-                          <Text style={styles.propertyKey}>
-                            {getAttributeName(key)}:
-                          </Text>
-                          <Text style={styles.propertyValue}>
-                            {displayValue}
-                          </Text>
-                        </View>
-                      );
-                    }
-
-                    // Handle simple string/number values
-                    return (
-                      <View key={key} style={styles.viewField}>
-                        <Text style={styles.propertyKey}>
-                          {getAttributeName(key)}:
-                        </Text>
-                        <Text style={styles.propertyValue}>{value || ""}</Text>
-                      </View>
-                    );
-                  })}
-              </View>
-            )}
+                    })}
+                </View>
+              )}
 
             {/* Attributes - editable for areas */}
             {isEditMode && item.placeType === "Place_Area" && (
@@ -581,11 +593,10 @@ export function ItemModal({
                 <Text style={styles.historySectionTitle}>
                   {t("attributes")}
                 </Text>
-                {Object.keys(item.attributes || {})
-                  .filter((key) => !["name", "notes", "color"].includes(key))
+                {Object.keys(item.attributes?.site || {})
                   .sort()
                   .map((key) => {
-                    const value = item.attributes?.[key];
+                    const value = item.attributes?.site?.[key];
                     const options = attributeOptions[key];
                     const attributeType = getAttributeType(key);
 
@@ -698,7 +709,10 @@ export function ItemModal({
                                     ...item,
                                     attributes: {
                                       ...item.attributes,
-                                      species: undefined,
+                                      site: {
+                                        ...item.attributes?.site,
+                                        species: undefined,
+                                      },
                                     },
                                   });
                                   return;
@@ -710,9 +724,12 @@ export function ItemModal({
                                   ...item,
                                   attributes: {
                                     ...item.attributes,
-                                    species: {
-                                      code: selected,
-                                      label: selectedOption?.label || null,
+                                    site: {
+                                      ...item.attributes?.site,
+                                      species: {
+                                        code: selected,
+                                        label: selectedOption?.label || null,
+                                      },
                                     },
                                   },
                                 });
@@ -753,9 +770,12 @@ export function ItemModal({
                                 ...item,
                                 attributes: {
                                   ...item.attributes,
-                                  speciesHeight: Number.isNaN(height)
-                                    ? undefined
-                                    : height,
+                                  site: {
+                                    ...item.attributes?.site,
+                                    speciesHeight: Number.isNaN(height)
+                                      ? undefined
+                                      : height,
+                                  },
                                 },
                               });
                             }}
@@ -822,9 +842,12 @@ export function ItemModal({
                                 ...item,
                                 attributes: {
                                   ...item.attributes,
-                                  [key]: Number.isNaN(numeric)
-                                    ? undefined
-                                    : numeric,
+                                  site: {
+                                    ...item.attributes?.site,
+                                    [key]: Number.isNaN(numeric)
+                                      ? undefined
+                                      : numeric,
+                                  },
                                 },
                               });
                             }}
@@ -941,9 +964,12 @@ export function ItemModal({
                                   ...item,
                                   attributes: {
                                     ...item.attributes,
-                                    [key]: {
-                                      code: selectedCode,
-                                      label: option?.label ?? null,
+                                    site: {
+                                      ...item.attributes?.site,
+                                      [key]: {
+                                        code: selectedCode,
+                                        label: option?.label ?? null,
+                                      },
                                     },
                                   },
                                 });

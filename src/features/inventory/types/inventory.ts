@@ -41,11 +41,24 @@ export interface PlaceSource {
   importedAt?: string;
 }
 
+export interface SiteAttributes {
+  [key: string]: { code?: string; label?: string | null } | any;
+}
+
+export interface PopulationData {
+  treeLayer?: string;
+  treeSpecies?: string;
+  treeSpecies_ref?: string;
+  objectPopulationId?: string;
+  [key: string]: any; // ObsP_* observations
+}
+
 export interface PlaceAttributes {
   name?: string;
   notes?: string;
   areaHa?: number;
-  site?: Record<string, { code?: string; label?: string }>;
+  site?: SiteAttributes;
+  population?: PopulationData[];
   color?: string;
   parentPlaceId?: string;
   [key: string]: any;
