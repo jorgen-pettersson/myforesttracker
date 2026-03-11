@@ -22,6 +22,7 @@ import {
   mapForestandFieldName,
   transformForestandCode,
 } from "../services/forestandMappingService";
+import { mapPopulationObservation } from "../services/populationMappingService";
 import { getAttributeOptions } from "../../inventory/services/attributeService";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
@@ -120,6 +121,53 @@ export function useImportExport() {
 
     return internalAttributes;
   };
+
+  const buildInternalPopulationAttributes = (
+    forestandPopulation: any[] | undefined
+  ): any[] | undefined => {
+    if (!forestandPopulation || forestandPopulation.length === 0) {
+      return undefined;
+    }
+
+    return forestandPopulation.map((pop) => {
+      const internal: any = {};
+
+      // Copy treeLayer as-is (Forestand provenance)
+      if (pop.treeLayer) {
+        internal.treeLayer = pop.treeLayer;
+      }
+
+      // Copy treeSpecies as-is
+      if (pop.treeSpecies) {
+        internal.treeSpecies = pop.treeSpecies;
+      } else if (pop.treeSpecies_ref) {
+        internal.treeSpecies_ref = pop.treeSpecies_ref;
+      }
+
+      // Map observations (ObsP_*) to internal names with numeric values
+      for (const [key, value] of Object.entries(pop)) {
+        if (key.startsWith("ObsP_")) {
+          const internalName = mapPopulationObservation(key);
+          if (internalName && value && typeof value === "object") {
+            // Extract numeric value from {code, label, uom} structure
+            const code = (value as any).code;
+            if (code != null) {
+              const numericValue = Number(code);
+              if (!Number.isNaN(numericValue)) {
+                internal[internalName] = numericValue;
+              } else {
+                // Non-numeric code (rare) - store as string
+                internal[internalName] = String(code);
+              }
+            }
+          }
+        }
+      }
+
+      return internal;
+    });
+  };
+
   const ensureDir = async (dir: string) => {
     const exists = await RNFS.exists(dir);
     if (!exists) {
@@ -791,6 +839,9 @@ export function useImportExport() {
         const siteAttributes = buildInternalAttributesFromSite(
           props?.forestand?.site
         );
+        const populationAttributes = buildInternalPopulationAttributes(
+          props?.forestand?.population
+        );
         const point: Place = {
           id: baseId,
           placeType: "Place_Point",
@@ -803,6 +854,9 @@ export function useImportExport() {
             notes: notes || undefined,
             ...(Object.keys(siteAttributes).length > 0
               ? { site: siteAttributes }
+              : {}),
+            ...(populationAttributes && populationAttributes.length > 0
+              ? { population: populationAttributes }
               : {}),
           },
           geometries: [
@@ -828,10 +882,16 @@ export function useImportExport() {
           const siteAttributes = buildInternalAttributesFromSite(
             props?.forestand?.site
           );
+          const populationAttributes = buildInternalPopulationAttributes(
+            props?.forestand?.population
+          );
           areaItem.attributes = {
             ...areaItem.attributes,
             ...(Object.keys(siteAttributes).length > 0
               ? { site: siteAttributes }
+              : {}),
+            ...(populationAttributes && populationAttributes.length > 0
+              ? { population: populationAttributes }
               : {}),
           };
           items.push(
@@ -865,10 +925,16 @@ export function useImportExport() {
         const siteAttributes = buildInternalAttributesFromSite(
           props?.forestand?.site
         );
+        const populationAttributes = buildInternalPopulationAttributes(
+          props?.forestand?.population
+        );
         areaItem.attributes = {
           ...areaItem.attributes,
           ...(Object.keys(siteAttributes).length > 0
             ? { site: siteAttributes }
+            : {}),
+          ...(populationAttributes && populationAttributes.length > 0
+            ? { population: populationAttributes }
             : {}),
         };
         items.push(

@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "source": "Forestand Object_Population",
+  "description": "Maps Forestand population observations (ObsP_*) to internal attribute names. Observations are numeric measurements extracted from {code, label, uom} structure.",
+  "observationMappings": {
+    "ObsP_AreaWeightedAge": "areaWeightedAge",
+    "ObsP_WeightedDiameter": "weightedDiameter",
+    "ObsP_MeanHeight": "meanHeight",
+    "ObsP_StandBasalArea": "standBasalArea",
+    "ObsP_AreaStandVolume": "areaStandVolume",
+    "ObsP_AreaStemNumber": "areaStemNumber",
+    "ObsP_SpeciesDistributionVolume": "speciesDistributionVolume"
+  }
+}
