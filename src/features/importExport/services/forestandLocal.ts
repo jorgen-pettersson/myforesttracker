@@ -298,7 +298,8 @@ const getObsElement = (obsNode: any) => {
     return null;
   }
   for (const key of Object.keys(obsNode)) {
-    if (key.startsWith("ObsS_")) {
+    // Match both ObsS_* (Site observations) and ObsP_* (Population observations)
+    if (key.startsWith("ObsS_") || key.startsWith("ObsP_")) {
       const value = obsNode[key];
       const element = Array.isArray(value) ? value[0] : value;
       return { name: key, node: element };
