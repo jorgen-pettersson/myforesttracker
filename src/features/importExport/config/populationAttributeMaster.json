@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "attributes": [
+    {
+      "name": "treeSpecies",
+      "type": "select",
+      "options": [
+        { "code": "E1_1_1", "label": "tall (Pinus sylvestris)" },
+        { "code": "E1_1_2", "label": "contortatall (Pinus contorta)" },
+        { "code": "E1_1_3", "label": "cembratall (Pinus cembra)" },
+        { "code": "E1_1_4", "label": "svarttall (Pinus nigra)" },
+        { "code": "E1_1_5", "label": "bergtall (Pinus mugo)" },
+        { "code": "E1_2_1", "label": "gran (Picea abies)" },
+        { "code": "E1_2_2", "label": "sitkagran (Picea sitchensis)" },
+        { "code": "E1_2_3", "label": "svartgran (Picea mariana)" },
+        { "code": "E1_3_1", "label": "sibirisk lärk (Larix Sibirica)" },
+        { "code": "E1_3_2", "label": "europeisk lärk (Larix decidua)" },
+        { "code": "E1_3_3", "label": "hybridlärk (Larix x Marschlinsii)" },
+        { "code": "E1_3_4", "label": "japansk lärk (Larix kaempferi)" },
+        { "code": "E1_4_1", "label": "douglasgranar (Pseudotsuga)" },
+        { "code": "E1_5_1", "label": "silvergran (Abies alba)" },
+        { "code": "E1_6_1", "label": "en (Juniperus Communis)" },
+        { "code": "E1_6_2", "label": "idegran (Taxus Baccata)" },
+        { "code": "E2_1_1", "label": "skogsalm (Ulmus glabra)" },
+        { "code": "E2_1_2", "label": "vresalm (Ulmus laevis)" },
+        { "code": "E2_1_3", "label": "lundalm (Ulmus minor)" },
+        { "code": "E2_2_1", "label": "ask (Fraxinus excelsior)" },
+        { "code": "E2_3_1", "label": "avenbok (Carpinus betulus)" },
+        { "code": "E2_4_1", "label": "bok (Fagus sylvatica)" },
+        { "code": "E2_5_1", "label": "skogsek (Quercius robur)" },
+        { "code": "E2_5_2", "label": "bergek (Quercius petraea)" },
+        { "code": "E2_6_1", "label": "sötkörsbär, fågelbär (Prunus avium)" },
+        { "code": "E2_6_2", "label": "hägg (Prunus Padus)" },
+        { "code": "E2_7_1", "label": "skogslind (Tilia cordata)" },
+        { "code": "E2_7_2", "label": "bohuslind (Tilia platyphyllos)" },
+        { "code": "E2_7_3", "label": "parklind (Tilia Europea)" },
+        { "code": "E2_8_1", "label": "lönn (Acer platanoides)" },
+        { "code": "E2_8_2", "label": "näverlönn (Acer Campestre)" },
+        { "code": "E2_8_3", "label": "sykomorlönn (Acer Pseudoplatanus)" },
+        { "code": "E2_9_1", "label": "vårtbjörk (Betula pendula)" },
+        { "code": "E2_9_2", "label": "glasbjörk (Betula pubescens)" },
+        { "code": "E2_10_1", "label": "asp (Populus tremula)" },
+        { "code": "E2_10_2", "label": "poppel (Poulus spp)" },
+        {
+          "code": "E2_10_3",
+          "label": "hybridasp (P. tremula x P. tremuloides)"
+        },
+        { "code": "E2_11_1", "label": "gråal (Alnus incana)" },
+        { "code": "E2_11_2", "label": "klibbal (Alnus glutinosa)" },
+        { "code": "E2_12_1", "label": "sälg (Salix caprea)" },
+        { "code": "E2_12_2", "label": "oxel (Sorbus intermedia)" },
+        { "code": "E2_12_3", "label": "rönn (Sorbus aucuparia)" },
+        { "code": "E2_12_4", "label": "äkta kastanj (Castanea sativa)" }
+      ]
+    }
+  ]
+}

@@ -24,6 +24,7 @@ import {
 } from "../services/forestandMappingService";
 import { mapPopulationObservation } from "../services/populationMappingService";
 import { getAttributeOptions } from "../../inventory/services/attributeService";
+import { getPopulationAttributeOptions } from "../services/populationAttributeService";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
 const IMPORT_DIR = `${RNFS.CachesDirectoryPath}/import`;
@@ -147,7 +148,12 @@ export function useImportExport() {
 
       // Copy treeSpecies as-is
       if (pop.treeSpecies) {
-        internal.treeSpecies = pop.treeSpecies;
+        const speciesCode = String(pop.treeSpecies);
+        const speciesOptions = getPopulationAttributeOptions("treeSpecies");
+        const match = speciesOptions.find((o) => o.code === speciesCode);
+        internal.treeSpecies = match
+          ? { code: match.code, label: match.label }
+          : speciesCode;
       } else if (pop.treeSpecies_ref) {
         internal.treeSpecies_ref = pop.treeSpecies_ref;
       }

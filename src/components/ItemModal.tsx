@@ -548,121 +548,250 @@ export function ItemModal({
               )}
 
             {/* Attributes - read-only view for areas */}
-            {isViewMode &&
-              item.placeType === "Place_Area" &&
-              item.attributes?.site && (
-                <View style={styles.attributesSection}>
-                  <Text style={styles.viewLabel}>{t("attributes")}</Text>
-                  {(() => {
-                    const siteAttributes = item.attributes?.site || {};
-                    const siteIndexSpec = getSiteIndexSpec(siteAttributes);
+            {isViewMode && item.placeType === "Place_Area" && (
+              <>
+                {item.attributes?.site && (
+                  <View style={styles.attributesSection}>
+                    <Text style={styles.viewLabel}>{t("attributes")}</Text>
+                    {(() => {
+                      const siteAttributes = item.attributes?.site || {};
+                      const siteIndexSpec = getSiteIndexSpec(siteAttributes);
 
-                    return Object.keys(siteAttributes)
-                      .sort()
-                      .map((key) => {
-                        const value = siteAttributes[key];
+                      return Object.keys(siteAttributes)
+                        .sort()
+                        .map((key) => {
+                          const value = siteAttributes[key];
 
-                        if (
-                          siteIndexSpec &&
-                          (key === "species" || key === "speciesHeight")
-                        ) {
-                          return null; // Legacy fields already represented by SiteIndexSpec
-                        }
+                          if (
+                            siteIndexSpec &&
+                            (key === "species" || key === "speciesHeight")
+                          ) {
+                            return null; // Legacy fields already represented by SiteIndexSpec
+                          }
 
-                        if (key === "SiteIndexSpec") {
-                          const speciesValue = siteIndexSpec?.species;
-                          const heightValue = siteIndexSpec?.speciesHeight;
-                          const speciesCode =
-                            speciesValue && typeof speciesValue === "object"
-                              ? (speciesValue as any).code
-                              : speciesValue;
-                          const displayText = heightValue
-                            ? `${speciesCode}${heightValue}`
-                            : speciesCode || "";
+                          if (key === "SiteIndexSpec") {
+                            const speciesValue = siteIndexSpec?.species;
+                            const heightValue = siteIndexSpec?.speciesHeight;
+                            const speciesCode =
+                              speciesValue && typeof speciesValue === "object"
+                                ? (speciesValue as any).code
+                                : speciesValue;
+                            const displayText = heightValue
+                              ? `${speciesCode}${heightValue}`
+                              : speciesCode || "";
 
-                          return (
-                            <View key={key} style={styles.viewField}>
-                              <Text style={styles.propertyKey}>
-                                {getAttributeName("SiteIndexSpec")}:
-                              </Text>
-                              <Text style={styles.propertyValue}>
-                                {displayText}
-                              </Text>
-                            </View>
-                          );
-                        }
+                            return (
+                              <View key={key} style={styles.viewField}>
+                                <Text style={styles.propertyKey}>
+                                  {getAttributeName("SiteIndexSpec")}:
+                                </Text>
+                                <Text style={styles.propertyValue}>
+                                  {displayText}
+                                </Text>
+                              </View>
+                            );
+                          }
 
-                        // Legacy species display when no composite exists
-                        if (key === "species") {
-                          const speciesValue = siteAttributes.species;
-                          const heightValue = siteAttributes.speciesHeight;
-                          const speciesCode =
-                            speciesValue && typeof speciesValue === "object"
-                              ? (speciesValue as any).code
-                              : speciesValue;
-                          const displayText = heightValue
-                            ? `${speciesCode}${heightValue}`
-                            : speciesCode || "";
+                          // Legacy species display when no composite exists
+                          if (key === "species") {
+                            const speciesValue = siteAttributes.species;
+                            const heightValue = siteAttributes.speciesHeight;
+                            const speciesCode =
+                              speciesValue && typeof speciesValue === "object"
+                                ? (speciesValue as any).code
+                                : speciesValue;
+                            const displayText = heightValue
+                              ? `${speciesCode}${heightValue}`
+                              : speciesCode || "";
 
-                          return (
-                            <View key={key} style={styles.viewField}>
-                              <Text style={styles.propertyKey}>
-                                {getAttributeName("SiteIndexSpec")}:
-                              </Text>
-                              <Text style={styles.propertyValue}>
-                                {displayText}
-                              </Text>
-                            </View>
-                          );
-                        }
+                            return (
+                              <View key={key} style={styles.viewField}>
+                                <Text style={styles.propertyKey}>
+                                  {getAttributeName("SiteIndexSpec")}:
+                                </Text>
+                                <Text style={styles.propertyValue}>
+                                  {displayText}
+                                </Text>
+                              </View>
+                            );
+                          }
 
-                        if (key === "speciesHeight") {
-                          return null;
-                        }
+                          if (key === "speciesHeight") {
+                            return null;
+                          }
 
-                        if (key === "areaHa") {
+                          if (key === "areaHa") {
+                            return (
+                              <View key={key} style={styles.viewField}>
+                                <Text style={styles.propertyKey}>
+                                  {getAttributeName(key)}:
+                                </Text>
+                                <Text style={styles.propertyValue}>
+                                  {typeof value === "number"
+                                    ? value.toFixed(2)
+                                    : value || ""}
+                                </Text>
+                              </View>
+                            );
+                          }
+
+                          if (value && typeof value === "object") {
+                            const displayValue = formatValue(value);
+                            return (
+                              <View key={key} style={styles.viewField}>
+                                <Text style={styles.propertyKey}>
+                                  {getAttributeName(key)}:
+                                </Text>
+                                <Text style={styles.propertyValue}>
+                                  {displayValue}
+                                </Text>
+                              </View>
+                            );
+                          }
+
                           return (
                             <View key={key} style={styles.viewField}>
                               <Text style={styles.propertyKey}>
                                 {getAttributeName(key)}:
                               </Text>
                               <Text style={styles.propertyValue}>
-                                {typeof value === "number"
-                                  ? value.toFixed(2)
-                                  : value || ""}
+                                {value || ""}
                               </Text>
                             </View>
                           );
-                        }
+                        });
+                    })()}
+                  </View>
+                )}
 
-                        if (value && typeof value === "object") {
-                          const displayValue = formatValue(value);
-                          return (
-                            <View key={key} style={styles.viewField}>
-                              <Text style={styles.propertyKey}>
-                                {getAttributeName(key)}:
-                              </Text>
-                              <Text style={styles.propertyValue}>
-                                {displayValue}
-                              </Text>
-                            </View>
-                          );
-                        }
+                {item.attributes?.population &&
+                  item.attributes.population.length > 0 && (
+                    <View style={styles.populationSection}>
+                      <Text style={styles.viewLabel}>{t("population")}</Text>
+                      <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.populationCarousel}
+                      >
+                        {(item.attributes.population || []).map(
+                          (pop, index) => {
+                            const total =
+                              item.attributes?.population?.length || 0;
+                            const metaKeys = [
+                              "treeLayer",
+                              "treeSpecies",
+                              "treeSpecies_ref",
+                              "objectPopulationId",
+                            ];
 
-                        return (
-                          <View key={key} style={styles.viewField}>
-                            <Text style={styles.propertyKey}>
-                              {getAttributeName(key)}:
-                            </Text>
-                            <Text style={styles.propertyValue}>
-                              {value || ""}
-                            </Text>
-                          </View>
-                        );
-                      });
-                  })()}
-                </View>
-              )}
+                            const entries = Object.entries(pop || {});
+                            const meta = entries.filter(([k]) =>
+                              metaKeys.includes(k)
+                            );
+                            const measurements = entries.filter(
+                              ([k]) => !metaKeys.includes(k)
+                            );
+
+                            const renderValue = (val: any) => {
+                              if (
+                                val &&
+                                typeof val === "object" &&
+                                "value" in val
+                              ) {
+                                const valueStr = `${(val as any).value}`;
+                                const unitStr = (val as any).unit
+                                  ? ` ${(val as any).unit}`
+                                  : "";
+                                return `${valueStr}${unitStr}`;
+                              }
+                              if (
+                                val &&
+                                typeof val === "object" &&
+                                "label" in val
+                              ) {
+                                return String((val as any).label ?? "");
+                              }
+                              return formatValue(val);
+                            };
+
+                            const treeLayer = meta.find(
+                              ([k]) => k === "treeLayer"
+                            )?.[1];
+                            const treeSpecies = meta.find(
+                              ([k]) => k === "treeSpecies"
+                            )?.[1];
+                            const treeSpeciesLabel =
+                              treeSpecies && typeof treeSpecies === "object"
+                                ? (treeSpecies as any).label ||
+                                  (treeSpecies as any).code
+                                : treeSpecies;
+
+                            const cardTitle = treeLayer
+                              ? treeSpeciesLabel
+                                ? `${formatValue(
+                                    treeLayer
+                                  )} / ${treeSpeciesLabel}`
+                                : formatValue(treeLayer)
+                              : `${t("population")} ${index + 1}`;
+
+                            return (
+                              <View
+                                key={`population-${index}`}
+                                style={styles.populationCard}
+                              >
+                                <View style={styles.populationCardHeader}>
+                                  <Text style={styles.populationTitle}>
+                                    {cardTitle}
+                                  </Text>
+                                  <Text style={styles.populationIndex}>
+                                    {`${index + 1}/${total || 1}`}
+                                  </Text>
+                                </View>
+
+                                {meta
+                                  .filter(
+                                    ([k, v]) =>
+                                      k !== "treeLayer" &&
+                                      k !== "treeSpecies_ref" &&
+                                      v
+                                  )
+                                  .map(([k, v]) => (
+                                    <View
+                                      key={`${index}-${k}`}
+                                      style={styles.populationRow}
+                                    >
+                                      <Text style={styles.populationKey}>
+                                        {getAttributeName(k)}:
+                                      </Text>
+                                      <Text style={styles.populationValue}>
+                                        {formatValue(v)}
+                                      </Text>
+                                    </View>
+                                  ))}
+
+                                {measurements.map(([k, v]) => (
+                                  <View
+                                    key={`${index}-${k}`}
+                                    style={styles.populationRow}
+                                  >
+                                    <Text style={styles.populationKey}>
+                                      {getAttributeName(k)}:
+                                    </Text>
+                                    <Text style={styles.populationValue}>
+                                      {renderValue(v)}
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            );
+                          }
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
+              </>
+            )}
 
             {/* Attributes - editable for areas */}
             {isEditMode && item.placeType === "Place_Area" && (
