@@ -144,20 +144,29 @@ export function useImportExport() {
         internal.treeSpecies_ref = pop.treeSpecies_ref;
       }
 
-      // Map observations (ObsP_*) to internal names with numeric values
+      // Map observations (ObsP_*) to internal names with values and units
       for (const [key, value] of Object.entries(pop)) {
         if (key.startsWith("ObsP_")) {
           const internalName = mapPopulationObservation(key);
           if (internalName && value && typeof value === "object") {
-            // Extract numeric value from {code, label, uom} structure
+            // Extract value and unit from {code, label, uom} structure
             const code = (value as any).code;
+            const uom = (value as any).uom;
+
             if (code != null) {
               const numericValue = Number(code);
               if (!Number.isNaN(numericValue)) {
-                internal[internalName] = numericValue;
+                // Store as {value, unit} structure
+                internal[internalName] = {
+                  value: numericValue,
+                  unit: uom || null,
+                };
               } else {
-                // Non-numeric code (rare) - store as string
-                internal[internalName] = String(code);
+                // Non-numeric code (rare) - store as string with unit
+                internal[internalName] = {
+                  value: String(code),
+                  unit: uom || null,
+                };
               }
             }
           }

@@ -45,12 +45,25 @@ export interface SiteAttributes {
   [key: string]: { code?: string; label?: string | null } | any;
 }
 
+export interface PopulationMeasurement {
+  value: number | string;
+  unit: string | null;
+}
+
 export interface PopulationData {
   treeLayer?: string;
   treeSpecies?: string;
   treeSpecies_ref?: string;
   objectPopulationId?: string;
-  [key: string]: any; // ObsP_* observations
+  // Measurements
+  areaWeightedAge?: PopulationMeasurement;
+  meanHeight?: PopulationMeasurement;
+  weightedDiameter?: PopulationMeasurement;
+  standBasalArea?: PopulationMeasurement;
+  areaStandVolume?: PopulationMeasurement;
+  areaStemNumber?: PopulationMeasurement;
+  speciesDistributionVolume?: PopulationMeasurement;
+  [key: string]: any; // Allow other measurements
 }
 
 export interface PlaceAttributes {

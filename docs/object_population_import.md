@@ -34,40 +34,16 @@ Object_Population elements are extracted from Forestand XML and stored in `prope
         /* Object_Site data */
       },
       "population": [
-        {
-          "treeLayer": "produktionsskikt",
-          "treeSpecies": "E1_1_1",
-          "objectPopulationId": "G403",
-          "ObsP_AreaWeightedAge": {
-            "code": "120",
-            "label": null,
-            "uom": "year"
-          },
-          "ObsP_WeightedDiameter": {
-            "code": "28.97",
-            "label": null,
-            "uom": "cm"
-          },
-          "ObsP_MeanHeight": {
-            "code": "21.86",
-            "label": null,
-            "uom": "m"
-          },
-          "ObsP_StandBasalArea": {
-            "code": "23.00",
-            "label": null,
-            "uom": "m2"
-          },
-          "ObsP_AreaStandVolume": {
-            "code": "237.00",
-            "label": null,
-            "uom": "m3_per_ha"
-          },
-          "ObsP_AreaStemNumber": {
-            "code": "400",
-            "label": null,
-            "uom": "per_ha"
-          }
+  {
+    "treeLayer": "produktionsskikt",
+    "treeSpecies": "E1_1_1",
+    "areaWeightedAge": { "value": 120, "unit": "year" },
+    "meanHeight": { "value": 21.86, "unit": "m" },
+    "weightedDiameter": { "value": 28.97, "unit": "cm" },
+    "standBasalArea": { "value": 23.00, "unit": "m2" },
+    "areaStandVolume": { "value": 237.00, "unit": "m3_per_ha" },
+    "areaStemNumber": { "value": 400, "unit": "per_ha" }
+  }
         }
       ]
     }
