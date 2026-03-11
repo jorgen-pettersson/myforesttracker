@@ -673,6 +673,7 @@ export function ItemModal({
                         pagingEnabled
                         showsHorizontalScrollIndicator={false}
                         style={styles.populationCarousel}
+                        contentContainerStyle={styles.populationCarouselContent}
                       >
                         {(item.attributes.population || []).map(
                           (pop, index) => {

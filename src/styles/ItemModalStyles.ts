@@ -256,9 +256,13 @@ export const itemModalStyles = StyleSheet.create({
   populationCarousel: {
     marginTop: 8,
   },
+  populationCarouselContent: {
+    paddingRight: 12,
+  },
   populationCard: {
-    width: 300,
-    marginRight: 12,
+    width: 250,
+    maxWidth: "90%",
+    marginRight: 10,
     backgroundColor: "#f8f9fa",
     borderRadius: 10,
     padding: 12,
