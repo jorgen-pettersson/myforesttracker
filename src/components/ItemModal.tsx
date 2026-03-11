@@ -753,6 +753,7 @@ export function ItemModal({
                                   .filter(
                                     ([k, v]) =>
                                       k !== "treeLayer" &&
+                                      k !== "treeSpecies" &&
                                       k !== "treeSpecies_ref" &&
                                       v
                                   )
