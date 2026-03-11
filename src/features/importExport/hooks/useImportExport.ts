@@ -56,12 +56,15 @@ export function useImportExport() {
 
       // Special handling for ObsS_SIS (Site Index with species and height)
       if (forestandField === "ObsS_SIS") {
+        const siteIndexSpec: Record<string, any> =
+          internalAttributes.SiteIndexSpec || {};
+
         // Extract height from result.code (e.g., <sis:result uom="m">24</sis:result>)
         const result = (value as any).result;
         if (result?.code) {
           const heightValue = Number(result.code);
           if (!Number.isNaN(heightValue)) {
-            internalAttributes.speciesHeight = heightValue;
+            siteIndexSpec.speciesHeight = heightValue;
           }
         }
 
@@ -82,11 +85,16 @@ export function useImportExport() {
             (o) => o.code === internalSpeciesCode
           );
 
-          internalAttributes.species = {
+          siteIndexSpec.species = {
             code: internalSpeciesCode,
             label: speciesOption?.label || null,
           };
         }
+
+        if (Object.keys(siteIndexSpec).length > 0) {
+          internalAttributes.SiteIndexSpec = siteIndexSpec;
+        }
+
         continue; // Skip regular processing for ObsS_SIS
       }
 
