@@ -500,7 +500,7 @@ export function ItemModal({
                   <Text style={styles.historySectionTitle}>
                     {t("userJournal")}
                   </Text>
-                  {!isViewMode && !showAddHistory && (
+                  {!showAddHistory && (
                     <TouchableOpacity
                       style={styles.addHistoryButton}
                       onPress={() => setShowAddHistory(true)}
@@ -512,7 +512,7 @@ export function ItemModal({
                   )}
                 </View>
 
-                {!isViewMode && showAddHistory && (
+                {showAddHistory && (
                   <View style={styles.addHistoryForm}>
                     <Text style={styles.label}>{t("title")}</Text>
                     <TextInput
