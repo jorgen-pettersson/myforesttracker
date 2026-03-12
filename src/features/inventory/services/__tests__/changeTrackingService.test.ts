@@ -568,7 +568,7 @@ describe("changeTrackingService", () => {
         },
       ];
       const summary = generateSummary(patches, "attributes.updated");
-      expect(summary).toBe("Updated 1 attribute");
+      expect(summary).toBe("Updated notes");
     });
 
     test("generates summary for media.attached with count", () => {

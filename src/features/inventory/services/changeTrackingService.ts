@@ -459,6 +459,13 @@ export function generateSummary(
       const attrCount = patch.filter((p) =>
         p.path.startsWith("/attributes")
       ).length;
+      if (attrCount === 1) {
+        const first = patch.find((p) => p.path.startsWith("/attributes"));
+        const attrPath =
+          first?.path.replace(/^\/attributes\//, "") || "attribute";
+        const attrName = attrPath.split("/").filter(Boolean).pop() || attrPath;
+        return `Updated ${attrName}`;
+      }
       return `Updated ${attrCount} attribute${attrCount > 1 ? "s" : ""}`;
     }
 
