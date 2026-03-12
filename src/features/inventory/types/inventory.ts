@@ -41,11 +41,37 @@ export interface PlaceSource {
   importedAt?: string;
 }
 
+export interface SiteAttributes {
+  [key: string]: { code?: string; label?: string | null } | any;
+}
+
+export interface PopulationMeasurement {
+  value: number | string;
+  unit: string | null;
+}
+
+export interface PopulationData {
+  treeLayer?: string;
+  treeSpecies?: string;
+  treeSpecies_ref?: string;
+  objectPopulationId?: string;
+  // Measurements
+  areaWeightedAge?: PopulationMeasurement;
+  meanHeight?: PopulationMeasurement;
+  weightedDiameter?: PopulationMeasurement;
+  standBasalArea?: PopulationMeasurement;
+  areaStandVolume?: PopulationMeasurement;
+  areaStemNumber?: PopulationMeasurement;
+  speciesDistributionVolume?: PopulationMeasurement;
+  [key: string]: any; // Allow other measurements
+}
+
 export interface PlaceAttributes {
   name?: string;
   notes?: string;
   areaHa?: number;
-  site?: Record<string, { code?: string; label?: string }>;
+  site?: SiteAttributes;
+  population?: PopulationData[];
   color?: string;
   parentPlaceId?: string;
   [key: string]: any;

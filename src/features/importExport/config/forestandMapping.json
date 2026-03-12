@@ -205,6 +205,12 @@
     "ObsS_Species": {
       "mapping": "species",
       "codeTransformations": {
+        "T": "T",
+        "G": "G",
+        "B": "B",
+        "C": "C",
+        "E": "E",
+        "F": "F",
         "1": "T",
         "2": "G",
         "3": "B",
@@ -284,10 +290,7 @@
   "specialCases": {
     "ObsS_SIS": {
       "description": "Site Index - Complex nested structure requiring special extraction logic",
-      "mapsTo": [
-        "species",
-        "speciesHeight"
-      ],
+      "mapsTo": ["species", "speciesHeight"],
       "useTransformationsFrom": "ObsS_Species",
       "extraction": {
         "species": "spec.species.code (transformed via ObsS_Species codeTransformations)",

@@ -238,13 +238,15 @@ describe("changeTrackingService", () => {
       expect((patches[0] as any).value).toBe("New Name");
     });
 
-    test("detects nested attribute changes", () => {
+    test("detects nested site attribute changes", () => {
       const oldPlace: Place = {
         id: "place-1",
         placeType: "Place_Area",
         attributes: {
           name: "Test",
-          ManagementClass: { code: "PG", label: "Old" },
+          site: {
+            ManagementClass: { code: "PG", label: "Old" },
+          },
         },
       };
 
@@ -252,7 +254,9 @@ describe("changeTrackingService", () => {
         ...oldPlace,
         attributes: {
           name: "Test",
-          ManagementClass: { code: "NS", label: "New" },
+          site: {
+            ManagementClass: { code: "NS", label: "New" },
+          },
         },
       };
 
@@ -260,7 +264,7 @@ describe("changeTrackingService", () => {
 
       expect(patches).toHaveLength(1);
       expect(patches[0].op).toBe("replace");
-      expect(patches[0].path).toBe("/attributes/ManagementClass");
+      expect(patches[0].path).toBe("/attributes/site/ManagementClass");
       const replacePatch = patches[0] as any;
       expect(replacePatch.from).toEqual({ code: "PG", label: "Old" });
       expect(replacePatch.value).toEqual({ code: "NS", label: "New" });

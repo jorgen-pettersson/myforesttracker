@@ -250,4 +250,66 @@ export const itemModalStyles = StyleSheet.create({
     color: "#333",
     flex: 1,
   },
+  populationSection: {
+    marginTop: 10,
+  },
+  populationCarousel: {
+    marginTop: 8,
+  },
+  populationCarouselContent: {
+    paddingRight: 12,
+  },
+  siteCard: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    backgroundColor: "#f8f9fa",
+  },
+  populationCard: {
+    width: 250,
+    maxWidth: "90%",
+    marginRight: 10,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  populationCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  populationTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#333",
+  },
+  populationIndex: {
+    fontSize: 12,
+    color: "#888",
+  },
+  populationRow: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e6e6e6",
+  },
+  populationKey: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#555",
+    marginBottom: 2,
+  },
+  populationValue: {
+    fontSize: 12,
+    color: "#333",
+    marginLeft: 0,
+    textAlign: "left",
+    flexShrink: 1,
+  },
 });

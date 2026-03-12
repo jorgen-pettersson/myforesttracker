@@ -298,7 +298,8 @@ const getObsElement = (obsNode: any) => {
     return null;
   }
   for (const key of Object.keys(obsNode)) {
-    if (key.startsWith("ObsS_")) {
+    // Match both ObsS_* (Site observations) and ObsP_* (Population observations)
+    if (key.startsWith("ObsS_") || key.startsWith("ObsP_")) {
       const value = obsNode[key];
       const element = Array.isArray(value) ? value[0] : value;
       return { name: key, node: element };
@@ -405,6 +406,88 @@ const extractObjectSite = (place: any) => {
   };
 };
 
+/**
+ * Extract Object_Population elements from a Place
+ * Returns array of population objects or null
+ *
+ * Each population object contains:
+ * - treeLayer: string (e.g., "produktionsskikt")
+ * - treeSpecies: string (optional, e.g., "E1_1_1")
+ * - treeSpecies_ref: string (optional, xlink:href if treeSpecies not present)
+ * - objectPopulationId: gml:id if present
+ * - ObsP_*: observations (e.g., ObsP_MeanHeight, ObsP_AreaWeightedAge)
+ *
+ * Observations are extracted using the same extractObsResult logic as Object_Site,
+ * resulting in {code, label, uom} structure where label is null for numeric measurements.
+ */
+const extractObjectPopulation = (place: any) => {
+  const objectPopulations = findAllByName(place, "Object_Population");
+
+  if (objectPopulations.length === 0) {
+    return null;
+  }
+
+  const populations: Record<string, any>[] = [];
+
+  for (const objectPop of objectPopulations) {
+    const population: Record<string, any> = {};
+
+    // Extract treeLayer (direct child element)
+    const treeLayer = getText(getDirectChildren(objectPop, "treeLayer")[0]);
+    if (treeLayer) {
+      population.treeLayer = treeLayer;
+    }
+
+    // Extract treeSpecies (direct child element, optional)
+    const treeSpecies = getText(getDirectChildren(objectPop, "treeSpecies")[0]);
+    if (treeSpecies) {
+      population.treeSpecies = treeSpecies;
+    } else {
+      // Try treeSpecies_ref as alternative (xlink:href)
+      const treeSpeciesRefNodes = getDirectChildren(
+        objectPop,
+        "treeSpecies_ref"
+      );
+      if (treeSpeciesRefNodes.length > 0) {
+        const href =
+          getAttr(treeSpeciesRefNodes[0], "href") ||
+          getAttr(treeSpeciesRefNodes[0], "xlink:href");
+        if (href) {
+          population.treeSpecies_ref = href;
+        }
+      }
+    }
+
+    // Extract observations (ObsP_*) - reuse Object_Site extraction logic
+    const obsNodes = getDirectChildren(objectPop, "obs");
+    for (const obsNode of obsNodes) {
+      const obsElement = getObsElement(obsNode);
+      if (!obsElement) {
+        continue;
+      }
+
+      // Reuse extractObsResult - handles ObsP_* same as ObsS_*
+      const extracted = extractObsResult(obsElement.name, obsElement.node);
+      if (extracted) {
+        population[obsElement.name] = extracted;
+      }
+    }
+
+    // Extract gml:id for traceability
+    const gmlId = getAttr(objectPop, "id") || getAttr(objectPop, "gml:id");
+    if (gmlId) {
+      population.objectPopulationId = gmlId;
+    }
+
+    // Add to array if has data
+    if (Object.keys(population).length > 0) {
+      populations.push(population);
+    }
+  }
+
+  return populations.length > 0 ? populations : null;
+};
+
 const getPlaceId = (place: any): string | null => {
   const direct = getText(getDirectChildren(place, "placeId")[0]);
   if (direct) {
@@ -492,6 +575,7 @@ const buildFeature = (
   const declaredAreaHa = getDeclaredArea(place);
   const geometryMemberIds = geometry ? collectGeometryMemberIds(place, []) : [];
   const objectSiteInfo = extractObjectSite(place);
+  const objectPopulations = extractObjectPopulation(place);
 
   const forestand: Record<string, any> = {
     placeType,
@@ -514,6 +598,11 @@ const buildFeature = (
       ...(forestand.ids || {}),
       ...objectSiteInfo.ids,
     };
+  }
+
+  // Add population data
+  if (objectPopulations) {
+    forestand.population = objectPopulations;
   }
 
   if (placeType === "Place_Shape") {

@@ -22,7 +22,9 @@ import {
   mapForestandFieldName,
   transformForestandCode,
 } from "../services/forestandMappingService";
+import { mapPopulationObservation } from "../services/populationMappingService";
 import { getAttributeOptions } from "../../inventory/services/attributeService";
+import { getPopulationAttributeOptions } from "../services/populationAttributeService";
 
 const EXPORT_DIR = `${RNFS.CachesDirectoryPath}/export`;
 const IMPORT_DIR = `${RNFS.CachesDirectoryPath}/import`;
@@ -55,12 +57,15 @@ export function useImportExport() {
 
       // Special handling for ObsS_SIS (Site Index with species and height)
       if (forestandField === "ObsS_SIS") {
+        const siteIndexSpec: Record<string, any> =
+          internalAttributes.SiteIndexSpec || {};
+
         // Extract height from result.code (e.g., <sis:result uom="m">24</sis:result>)
         const result = (value as any).result;
         if (result?.code) {
           const heightValue = Number(result.code);
           if (!Number.isNaN(heightValue)) {
-            internalAttributes.speciesHeight = heightValue;
+            siteIndexSpec.speciesHeight = heightValue;
           }
         }
 
@@ -81,11 +86,16 @@ export function useImportExport() {
             (o) => o.code === internalSpeciesCode
           );
 
-          internalAttributes.species = {
+          siteIndexSpec.species = {
             code: internalSpeciesCode,
             label: speciesOption?.label || null,
           };
         }
+
+        if (Object.keys(siteIndexSpec).length > 0) {
+          internalAttributes.SiteIndexSpec = siteIndexSpec;
+        }
+
         continue; // Skip regular processing for ObsS_SIS
       }
 
@@ -120,6 +130,67 @@ export function useImportExport() {
 
     return internalAttributes;
   };
+
+  const buildInternalPopulationAttributes = (
+    forestandPopulation: any[] | undefined
+  ): any[] | undefined => {
+    if (!forestandPopulation || forestandPopulation.length === 0) {
+      return undefined;
+    }
+
+    return forestandPopulation.map((pop) => {
+      const internal: any = {};
+
+      // Copy treeLayer as-is (Forestand provenance)
+      if (pop.treeLayer) {
+        internal.treeLayer = pop.treeLayer;
+      }
+
+      // Copy treeSpecies as-is
+      if (pop.treeSpecies) {
+        const speciesCode = String(pop.treeSpecies);
+        const speciesOptions = getPopulationAttributeOptions("treeSpecies");
+        const match = speciesOptions.find((o) => o.code === speciesCode);
+        internal.treeSpecies = match
+          ? { code: match.code, label: match.label }
+          : speciesCode;
+      } else if (pop.treeSpecies_ref) {
+        internal.treeSpecies_ref = pop.treeSpecies_ref;
+      }
+
+      // Map observations (ObsP_*) to internal names with values and units
+      for (const [key, value] of Object.entries(pop)) {
+        if (key.startsWith("ObsP_")) {
+          const internalName = mapPopulationObservation(key);
+          if (internalName && value && typeof value === "object") {
+            // Extract value and unit from {code, label, uom} structure
+            const code = (value as any).code;
+            const uom = (value as any).uom;
+
+            if (code != null) {
+              const numericValue = Number(code);
+              if (!Number.isNaN(numericValue)) {
+                // Store as {value, unit} structure
+                internal[internalName] = {
+                  value: numericValue,
+                  unit: uom || null,
+                };
+              } else {
+                // Non-numeric code (rare) - store as string with unit
+                internal[internalName] = {
+                  value: String(code),
+                  unit: uom || null,
+                };
+              }
+            }
+          }
+        }
+      }
+
+      return internal;
+    });
+  };
+
   const ensureDir = async (dir: string) => {
     const exists = await RNFS.exists(dir);
     if (!exists) {
@@ -309,7 +380,7 @@ export function useImportExport() {
       // Write JSON
       if (format === "json" || format === "all") {
         const jsonData = JSON.stringify(
-          { version: 3, places: exportPlaces },
+          { version: 4, places: exportPlaces },
           null,
           2
         );
@@ -788,8 +859,11 @@ export function useImportExport() {
         : Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
       if (feature.geometry.type === "Point") {
-        const internalAttributes = buildInternalAttributesFromSite(
+        const siteAttributes = buildInternalAttributesFromSite(
           props?.forestand?.site
+        );
+        const populationAttributes = buildInternalPopulationAttributes(
+          props?.forestand?.population
         );
         const point: Place = {
           id: baseId,
@@ -801,7 +875,12 @@ export function useImportExport() {
           attributes: {
             name: name || undefined,
             notes: notes || undefined,
-            ...internalAttributes,
+            ...(Object.keys(siteAttributes).length > 0
+              ? { site: siteAttributes }
+              : {}),
+            ...(populationAttributes && populationAttributes.length > 0
+              ? { population: populationAttributes }
+              : {}),
           },
           geometries: [
             {
@@ -823,12 +902,20 @@ export function useImportExport() {
         const rings = feature.geometry.coordinates;
         const areaItem = processPolygon(rings, baseId, name, notes, props, now);
         if (areaItem) {
-          const internalAttributes = buildInternalAttributesFromSite(
+          const siteAttributes = buildInternalAttributesFromSite(
             props?.forestand?.site
+          );
+          const populationAttributes = buildInternalPopulationAttributes(
+            props?.forestand?.population
           );
           areaItem.attributes = {
             ...areaItem.attributes,
-            ...internalAttributes,
+            ...(Object.keys(siteAttributes).length > 0
+              ? { site: siteAttributes }
+              : {}),
+            ...(populationAttributes && populationAttributes.length > 0
+              ? { population: populationAttributes }
+              : {}),
           };
           items.push(
             existingPlace ? mergeDuplicate(existingPlace, areaItem) : areaItem
@@ -858,12 +945,20 @@ export function useImportExport() {
           media: [],
           properties: props,
         };
-        const internalAttributes = buildInternalAttributesFromSite(
+        const siteAttributes = buildInternalAttributesFromSite(
           props?.forestand?.site
+        );
+        const populationAttributes = buildInternalPopulationAttributes(
+          props?.forestand?.population
         );
         areaItem.attributes = {
           ...areaItem.attributes,
-          ...internalAttributes,
+          ...(Object.keys(siteAttributes).length > 0
+            ? { site: siteAttributes }
+            : {}),
+          ...(populationAttributes && populationAttributes.length > 0
+            ? { population: populationAttributes }
+            : {}),
         };
         items.push(
           existingPlace ? mergeDuplicate(existingPlace, areaItem) : areaItem

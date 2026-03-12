@@ -105,38 +105,89 @@ function deepEqual(a: any, b: any): boolean {
 }
 
 /**
+ * Diff a nested attribute object (e.g., site or population)
+ */
+function diffNestedAttributes(
+  oldNested: Record<string, any> | undefined,
+  newNested: Record<string, any> | undefined,
+  basePath: string
+): PatchOperation[] {
+  const patches: PatchOperation[] = [];
+  const oldKeys = new Set(Object.keys(oldNested || {}));
+  const newKeys = new Set(Object.keys(newNested || {}));
+
+  // Removed nested attributes
+  for (const key of oldKeys) {
+    if (!newKeys.has(key)) {
+      patches.push({
+        op: "remove",
+        path: `${basePath}/${key}`,
+        from: (oldNested as any)[key],
+      });
+    }
+  }
+
+  // Added or changed nested attributes
+  for (const key of newKeys) {
+    const oldVal = oldNested?.[key];
+    const newVal = (newNested as any)[key];
+
+    if (!oldKeys.has(key)) {
+      // Added
+      patches.push({
+        op: "add",
+        path: `${basePath}/${key}`,
+        value: newVal,
+      });
+    } else if (!deepEqual(oldVal, newVal)) {
+      // Changed
+      patches.push({
+        op: "replace",
+        path: `${basePath}/${key}`,
+        from: oldVal,
+        value: newVal,
+      });
+    }
+  }
+
+  return patches;
+}
+
+/**
  * Diff attributes to detect changes
+ * Handles both top-level and nested (site, population) attributes
  */
 function diffAttributes(
   oldAttrs: PlaceAttributes | undefined,
   newAttrs: PlaceAttributes | undefined
 ): PatchOperation[] {
   const patches: PatchOperation[] = [];
-  const oldKeys = new Set(Object.keys(oldAttrs || {}));
-  const newKeys = new Set(Object.keys(newAttrs || {}));
 
-  // Removed attributes
-  for (const key of oldKeys) {
-    if (!newKeys.has(key)) {
-      patches.push({
-        op: "remove",
-        path: `/attributes/${key}`,
-        from: (oldAttrs as any)[key],
-      });
-    }
-  }
+  // List of top-level built-in attributes to diff
+  const builtinKeys = ["name", "notes", "areaHa", "color", "parentPlaceId"];
 
-  // Added or changed attributes
-  for (const key of newKeys) {
+  // Diff builtin attributes at top level
+  for (const key of builtinKeys) {
     const oldVal = oldAttrs?.[key];
-    const newVal = (newAttrs as any)[key];
+    const newVal = newAttrs?.[key];
 
-    if (!oldKeys.has(key)) {
+    if (oldVal === undefined && newVal === undefined) {
+      continue; // Both undefined, no change
+    }
+
+    if (oldVal === undefined && newVal !== undefined) {
       // Added
       patches.push({
         op: "add",
         path: `/attributes/${key}`,
         value: newVal,
+      });
+    } else if (oldVal !== undefined && newVal === undefined) {
+      // Removed
+      patches.push({
+        op: "remove",
+        path: `/attributes/${key}`,
+        from: oldVal,
       });
     } else if (!deepEqual(oldVal, newVal)) {
       // Changed
@@ -146,6 +197,44 @@ function diffAttributes(
         from: oldVal,
         value: newVal,
       });
+    }
+  }
+
+  // Diff nested site attributes
+  if (oldAttrs?.site || newAttrs?.site) {
+    const sitePatches = diffNestedAttributes(
+      oldAttrs?.site,
+      newAttrs?.site,
+      "/attributes/site"
+    );
+    patches.push(...sitePatches);
+  }
+
+  // Diff nested population attributes
+  if (oldAttrs?.population || newAttrs?.population) {
+    // For now, treat population as a single value (array comparison)
+    // TODO: More granular population diffing in future
+    if (!deepEqual(oldAttrs?.population, newAttrs?.population)) {
+      if (!oldAttrs?.population && newAttrs?.population) {
+        patches.push({
+          op: "add",
+          path: "/attributes/population",
+          value: newAttrs.population,
+        });
+      } else if (oldAttrs?.population && !newAttrs?.population) {
+        patches.push({
+          op: "remove",
+          path: "/attributes/population",
+          from: oldAttrs.population,
+        });
+      } else {
+        patches.push({
+          op: "replace",
+          path: "/attributes/population",
+          from: oldAttrs?.population,
+          value: newAttrs?.population,
+        });
+      }
     }
   }
 

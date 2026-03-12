@@ -140,7 +140,9 @@ export function ItemModal({
   // Helper to get attributes that can be added
   const getAvailableAttributesToAdd = useCallback((): AttributeDefinition[] => {
     const allSelectAttributes = getSelectAttributes();
-    const existingKeys = Object.keys(item.attributes || {});
+    const siteKeys = Object.keys(item.attributes?.site || {});
+    const hasSiteIndexSpec = siteKeys.includes("SiteIndexSpec");
+    const existingKeys = hasSiteIndexSpec ? [...siteKeys, "species"] : siteKeys;
 
     // Exclude attributes that are:
     // - Already on this item
@@ -152,7 +154,7 @@ export function ItemModal({
       "areaHa",
       "color",
       "parentPlaceId",
-      "speciesHeight", // Added automatically with species
+      "speciesHeight", // Legacy field (managed via SiteIndexSpec)
     ];
 
     return allSelectAttributes.filter(
@@ -161,6 +163,43 @@ export function ItemModal({
         !excludeFromAdding.includes(attr.name)
     );
   }, [item.attributes]);
+
+  const getSiteIndexSpec = (
+    site: Record<string, any> | undefined
+  ): Record<string, any> | null => {
+    if (site?.SiteIndexSpec && typeof site.SiteIndexSpec === "object") {
+      return site.SiteIndexSpec as Record<string, any>;
+    }
+    const legacySpecies = site?.species;
+    const legacyHeight = site?.speciesHeight;
+    if (legacySpecies !== undefined || legacyHeight !== undefined) {
+      return {
+        ...(legacySpecies !== undefined ? { species: legacySpecies } : {}),
+        ...(legacyHeight !== undefined ? { speciesHeight: legacyHeight } : {}),
+      };
+    }
+    return null;
+  };
+
+  const buildSiteWithIndexSpec = (
+    updater: (current: Record<string, any>) => Record<string, any> | null
+  ) => {
+    const site = item.attributes?.site || {};
+    const current = getSiteIndexSpec(site) || {};
+    const next = updater(current) || {};
+
+    const newSite = { ...site } as Record<string, any>;
+    delete newSite.species; // Clean legacy flat fields
+    delete newSite.speciesHeight;
+
+    if (Object.keys(next).length > 0) {
+      newSite.SiteIndexSpec = next;
+    } else {
+      delete newSite.SiteIndexSpec;
+    }
+
+    return newSite;
+  };
 
   // Helper to add a new attribute
   const addNewAttribute = useCallback(
@@ -175,20 +214,27 @@ export function ItemModal({
           ...item,
           attributes: {
             ...item.attributes,
-            species: undefined,
-            speciesHeight: undefined,
+            site: {
+              ...buildSiteWithIndexSpec(() => ({
+                species: undefined,
+                speciesHeight: undefined,
+              })),
+            },
           },
         });
         setSelectedNewAttribute("__none__");
         return;
       }
 
-      // For all other attributes, add with undefined (user must set value)
+      // For all other attributes, add to site with undefined (user must set value)
       onChangeItem({
         ...item,
         attributes: {
           ...item.attributes,
-          [attributeName]: undefined,
+          site: {
+            ...item.attributes?.site,
+            [attributeName]: undefined,
+          },
         },
       });
 
@@ -206,17 +252,26 @@ export function ItemModal({
           text: t("delete"),
           style: "destructive",
           onPress: () => {
-            const newAttributes = { ...item.attributes };
-            delete newAttributes[attributeName];
+            const newSiteAttributes = { ...item.attributes?.site };
+            delete newSiteAttributes[attributeName];
 
             // Special case: if removing species, also remove speciesHeight
             if (attributeName === "species") {
-              delete newAttributes.speciesHeight;
+              delete newSiteAttributes.speciesHeight;
+              delete newSiteAttributes.SiteIndexSpec;
+            }
+
+            if (attributeName === "SiteIndexSpec") {
+              delete newSiteAttributes.species;
+              delete newSiteAttributes.speciesHeight;
             }
 
             onChangeItem({
               ...item,
-              attributes: newAttributes,
+              attributes: {
+                ...item.attributes,
+                site: newSiteAttributes,
+              },
             });
           },
         },
@@ -494,85 +549,252 @@ export function ItemModal({
 
             {/* Attributes - read-only view for areas */}
             {isViewMode && item.placeType === "Place_Area" && (
-              <View style={styles.attributesSection}>
-                <Text style={styles.viewLabel}>{t("attributes")}</Text>
-                {Object.keys(item.attributes || {})
-                  .filter((key) => !["name", "notes", "color"].includes(key))
-                  .sort()
-                  .map((key) => {
-                    const value = item.attributes?.[key];
+              <>
+                {item.attributes?.site && (
+                  <View style={styles.attributesSection}>
+                    <Text style={styles.viewLabel}>{t("attributes")}</Text>
+                    <View style={styles.siteCard}>
+                      {(() => {
+                        const siteAttributes = item.attributes?.site || {};
+                        const siteIndexSpec = getSiteIndexSpec(siteAttributes);
 
-                    // Special handling for species composite in view mode
-                    if (key === "species") {
-                      const speciesValue = item.attributes?.species;
-                      const heightValue = item.attributes?.speciesHeight;
-                      // Extract just the code (e.g., "T" from {code: "T", label: "Tall"})
-                      const speciesCode =
-                        speciesValue && typeof speciesValue === "object"
-                          ? (speciesValue as any).code
-                          : speciesValue;
-                      const displayText = heightValue
-                        ? `${speciesCode}${heightValue}`
-                        : speciesCode || "";
+                        return Object.keys(siteAttributes)
+                          .sort()
+                          .map((key) => {
+                            const value = siteAttributes[key];
 
-                      return (
-                        <View key={key} style={styles.viewField}>
-                          <Text style={styles.propertyKey}>
-                            {getAttributeName(key)}:
-                          </Text>
-                          <Text style={styles.propertyValue}>
-                            {displayText}
-                          </Text>
-                        </View>
-                      );
-                    }
+                            if (
+                              siteIndexSpec &&
+                              (key === "species" || key === "speciesHeight")
+                            ) {
+                              return null; // Legacy fields already represented by SiteIndexSpec
+                            }
 
-                    // Skip speciesHeight (already rendered with species)
-                    if (key === "speciesHeight") {
-                      return null;
-                    }
+                            if (key === "SiteIndexSpec") {
+                              const speciesValue = siteIndexSpec?.species;
+                              const heightValue = siteIndexSpec?.speciesHeight;
+                              const speciesCode =
+                                speciesValue && typeof speciesValue === "object"
+                                  ? (speciesValue as any).code
+                                  : speciesValue;
+                              const displayText = heightValue
+                                ? `${speciesCode}${heightValue}`
+                                : speciesCode || "";
 
-                    if (key === "areaHa") {
-                      return (
-                        <View key={key} style={styles.viewField}>
-                          <Text style={styles.propertyKey}>
-                            {getAttributeName(key)}:
-                          </Text>
-                          <Text style={styles.propertyValue}>
-                            {typeof value === "number"
-                              ? value.toFixed(2)
-                              : value || ""}
-                          </Text>
-                        </View>
-                      );
-                    }
+                              return (
+                                <View key={key} style={styles.populationRow}>
+                                  <Text style={styles.populationKey}>
+                                    {getAttributeName("SiteIndexSpec")}:
+                                  </Text>
+                                  <Text style={styles.populationValue}>
+                                    {displayText}
+                                  </Text>
+                                </View>
+                              );
+                            }
 
-                    // Handle attributes with code/label objects
-                    if (value && typeof value === "object") {
-                      const displayValue = formatValue(value);
-                      return (
-                        <View key={key} style={styles.viewField}>
-                          <Text style={styles.propertyKey}>
-                            {getAttributeName(key)}:
-                          </Text>
-                          <Text style={styles.propertyValue}>
-                            {displayValue}
-                          </Text>
-                        </View>
-                      );
-                    }
+                            // Legacy species display when no composite exists
+                            if (key === "species") {
+                              const speciesValue = siteAttributes.species;
+                              const heightValue = siteAttributes.speciesHeight;
+                              const speciesCode =
+                                speciesValue && typeof speciesValue === "object"
+                                  ? (speciesValue as any).code
+                                  : speciesValue;
+                              const displayText = heightValue
+                                ? `${speciesCode}${heightValue}`
+                                : speciesCode || "";
 
-                    // Handle simple string/number values
-                    return (
-                      <View key={key} style={styles.viewField}>
-                        <Text style={styles.propertyKey}>
-                          {getAttributeName(key)}:
-                        </Text>
-                        <Text style={styles.propertyValue}>{value || ""}</Text>
-                      </View>
-                    );
-                  })}
-              </View>
+                              return (
+                                <View key={key} style={styles.populationRow}>
+                                  <Text style={styles.populationKey}>
+                                    {getAttributeName("SiteIndexSpec")}:
+                                  </Text>
+                                  <Text style={styles.populationValue}>
+                                    {displayText}
+                                  </Text>
+                                </View>
+                              );
+                            }
+
+                            if (key === "speciesHeight") {
+                              return null;
+                            }
+
+                            if (key === "areaHa") {
+                              return (
+                                <View key={key} style={styles.populationRow}>
+                                  <Text style={styles.populationKey}>
+                                    {getAttributeName(key)}:
+                                  </Text>
+                                  <Text style={styles.populationValue}>
+                                    {typeof value === "number"
+                                      ? value.toFixed(2)
+                                      : value || ""}
+                                  </Text>
+                                </View>
+                              );
+                            }
+
+                            if (value && typeof value === "object") {
+                              const displayValue = formatValue(value);
+                              return (
+                                <View key={key} style={styles.populationRow}>
+                                  <Text style={styles.populationKey}>
+                                    {getAttributeName(key)}:
+                                  </Text>
+                                  <Text style={styles.populationValue}>
+                                    {displayValue}
+                                  </Text>
+                                </View>
+                              );
+                            }
+
+                            return (
+                              <View key={key} style={styles.populationRow}>
+                                <Text style={styles.populationKey}>
+                                  {getAttributeName(key)}:
+                                </Text>
+                                <Text style={styles.populationValue}>
+                                  {value || ""}
+                                </Text>
+                              </View>
+                            );
+                          });
+                      })()}
+                    </View>
+                  </View>
+                )}
+
+                {item.attributes?.population &&
+                  item.attributes.population.length > 0 && (
+                    <View style={styles.populationSection}>
+                      <Text style={styles.viewLabel}>{t("population")}</Text>
+                      <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.populationCarousel}
+                        contentContainerStyle={styles.populationCarouselContent}
+                      >
+                        {(item.attributes.population || []).map(
+                          (pop, index) => {
+                            const total =
+                              item.attributes?.population?.length || 0;
+                            const metaKeys = [
+                              "treeLayer",
+                              "treeSpecies",
+                              "treeSpecies_ref",
+                              "objectPopulationId",
+                            ];
+
+                            const entries = Object.entries(pop || {});
+                            const meta = entries.filter(([k]) =>
+                              metaKeys.includes(k)
+                            );
+                            const measurements = entries.filter(
+                              ([k]) => !metaKeys.includes(k)
+                            );
+
+                            const renderValue = (val: any) => {
+                              if (
+                                val &&
+                                typeof val === "object" &&
+                                "value" in val
+                              ) {
+                                const valueStr = `${(val as any).value}`;
+                                const unitStr = (val as any).unit
+                                  ? ` ${(val as any).unit}`
+                                  : "";
+                                return `${valueStr}${unitStr}`;
+                              }
+                              if (
+                                val &&
+                                typeof val === "object" &&
+                                "label" in val
+                              ) {
+                                return String((val as any).label ?? "");
+                              }
+                              return formatValue(val);
+                            };
+
+                            const treeLayer = meta.find(
+                              ([k]) => k === "treeLayer"
+                            )?.[1];
+                            const treeSpecies = meta.find(
+                              ([k]) => k === "treeSpecies"
+                            )?.[1];
+                            const treeSpeciesLabel =
+                              treeSpecies && typeof treeSpecies === "object"
+                                ? (treeSpecies as any).label ||
+                                  (treeSpecies as any).code
+                                : treeSpecies;
+
+                            const cardTitle = treeLayer
+                              ? treeSpeciesLabel
+                                ? `${formatValue(
+                                    treeLayer
+                                  )} / ${treeSpeciesLabel}`
+                                : formatValue(treeLayer)
+                              : `${t("population")} ${index + 1}`;
+
+                            return (
+                              <View
+                                key={`population-${index}`}
+                                style={styles.populationCard}
+                              >
+                                <View style={styles.populationCardHeader}>
+                                  <Text style={styles.populationTitle}>
+                                    {cardTitle}
+                                  </Text>
+                                  <Text style={styles.populationIndex}>
+                                    {`${index + 1}/${total || 1}`}
+                                  </Text>
+                                </View>
+
+                                {meta
+                                  .filter(
+                                    ([k, v]) =>
+                                      k !== "treeLayer" &&
+                                      k !== "treeSpecies" &&
+                                      k !== "treeSpecies_ref" &&
+                                      v
+                                  )
+                                  .map(([k, v]) => (
+                                    <View
+                                      key={`${index}-${k}`}
+                                      style={styles.populationRow}
+                                    >
+                                      <Text style={styles.populationKey}>
+                                        {getAttributeName(k)}:
+                                      </Text>
+                                      <Text style={styles.populationValue}>
+                                        {formatValue(v)}
+                                      </Text>
+                                    </View>
+                                  ))}
+
+                                {measurements.map(([k, v]) => (
+                                  <View
+                                    key={`${index}-${k}`}
+                                    style={styles.populationRow}
+                                  >
+                                    <Text style={styles.populationKey}>
+                                      {getAttributeName(k)}:
+                                    </Text>
+                                    <Text style={styles.populationValue}>
+                                      {renderValue(v)}
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            );
+                          }
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
+              </>
             )}
 
             {/* Attributes - editable for areas */}
@@ -581,18 +803,24 @@ export function ItemModal({
                 <Text style={styles.historySectionTitle}>
                   {t("attributes")}
                 </Text>
-                {Object.keys(item.attributes || {})
-                  .filter((key) => !["name", "notes", "color"].includes(key))
+                {Object.keys(item.attributes?.site || {})
                   .sort()
                   .map((key) => {
-                    const value = item.attributes?.[key];
+                    const value = item.attributes?.site?.[key];
                     const options = attributeOptions[key];
                     const attributeType = getAttributeType(key);
 
-                    // Special handling for species composite (species + height)
-                    if (key === "species") {
-                      const speciesValue = item.attributes?.species;
-                      const heightValue = item.attributes?.speciesHeight;
+                    const siteAttributes = item.attributes?.site || {};
+                    const siteIndexSpec = getSiteIndexSpec(siteAttributes);
+
+                    // Special handling for SiteIndexSpec (species + height)
+                    if (
+                      key === "SiteIndexSpec" ||
+                      (key === "species" && !siteAttributes.SiteIndexSpec)
+                    ) {
+                      const composite = siteIndexSpec || {};
+                      const speciesValue = composite.species;
+                      const heightValue = composite.speciesHeight;
                       const speciesOptions = attributeOptions["species"];
 
                       const rawCode =
@@ -654,11 +882,11 @@ export function ItemModal({
                             }}
                           >
                             <Text style={styles.label}>
-                              {getAttributeName("species")}
+                              {getAttributeName("SiteIndexSpec")}
                             </Text>
                             {isAttributeRemovable("species") && (
                               <TouchableOpacity
-                                onPress={() => removeAttribute("species")}
+                                onPress={() => removeAttribute("SiteIndexSpec")}
                                 style={{
                                   width: 28,
                                   height: 28,
@@ -694,11 +922,18 @@ export function ItemModal({
                               }}
                               onValueChange={(selected) => {
                                 if (selected === emptyValue) {
+                                  const newSite = buildSiteWithIndexSpec(() => {
+                                    const next = { ...composite } as any;
+                                    delete next.species;
+                                    return Object.keys(next).length > 0
+                                      ? next
+                                      : {};
+                                  });
                                   onChangeItem({
                                     ...item,
                                     attributes: {
                                       ...item.attributes,
-                                      species: undefined,
+                                      site: newSite,
                                     },
                                   });
                                   return;
@@ -706,14 +941,19 @@ export function ItemModal({
                                 const selectedOption = pickerOptions.find(
                                   (o) => o.code === selected
                                 );
+                                const newSite = buildSiteWithIndexSpec(() => ({
+                                  ...composite,
+                                  species: {
+                                    code: selected,
+                                    label: selectedOption?.label || null,
+                                  },
+                                }));
+
                                 onChangeItem({
                                   ...item,
                                   attributes: {
                                     ...item.attributes,
-                                    species: {
-                                      code: selected,
-                                      label: selectedOption?.label || null,
-                                    },
+                                    site: newSite,
                                   },
                                 });
                               }}
@@ -749,13 +989,21 @@ export function ItemModal({
                             value={heightValue ? String(heightValue) : ""}
                             onChangeText={(text) => {
                               const height = Number(text);
+                              const newSite = buildSiteWithIndexSpec(() => {
+                                const next = { ...composite } as any;
+                                if (Number.isNaN(height)) {
+                                  delete next.speciesHeight;
+                                } else {
+                                  next.speciesHeight = height;
+                                }
+                                return next;
+                              });
+
                               onChangeItem({
                                 ...item,
                                 attributes: {
                                   ...item.attributes,
-                                  speciesHeight: Number.isNaN(height)
-                                    ? undefined
-                                    : height,
+                                  site: newSite,
                                 },
                               });
                             }}
@@ -764,8 +1012,11 @@ export function ItemModal({
                       );
                     }
 
-                    // Skip speciesHeight (already rendered with species)
                     if (key === "speciesHeight") {
+                      return null;
+                    }
+
+                    if (siteAttributes.SiteIndexSpec && key === "species") {
                       return null;
                     }
 
@@ -822,9 +1073,12 @@ export function ItemModal({
                                 ...item,
                                 attributes: {
                                   ...item.attributes,
-                                  [key]: Number.isNaN(numeric)
-                                    ? undefined
-                                    : numeric,
+                                  site: {
+                                    ...item.attributes?.site,
+                                    [key]: Number.isNaN(numeric)
+                                      ? undefined
+                                      : numeric,
+                                  },
                                 },
                               });
                             }}
@@ -941,9 +1195,12 @@ export function ItemModal({
                                   ...item,
                                   attributes: {
                                     ...item.attributes,
-                                    [key]: {
-                                      code: selectedCode,
-                                      label: option?.label ?? null,
+                                    site: {
+                                      ...item.attributes?.site,
+                                      [key]: {
+                                        code: selectedCode,
+                                        label: option?.label ?? null,
+                                      },
                                     },
                                   },
                                 });
@@ -1097,14 +1354,7 @@ export function ItemModal({
             )}
 
             {/* GeoJSON Properties - only in view mode */}
-            {isViewMode &&
-              item.properties &&
-              Object.keys(item.properties).length > 0 && (
-                <View style={styles.propertiesSection}>
-                  <Text style={styles.viewLabel}>{t("properties")}</Text>
-                  {renderProperties(item.properties)}
-                </View>
-              )}
+            {/* Properties section removed in view mode */}
 
             {/* Item Media Section */}
             {isViewMode ? (

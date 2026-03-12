@@ -44,7 +44,12 @@ type InventoryStorageV3 = {
   places: Place[];
 };
 
-const CURRENT_VERSION = 3;
+type InventoryStorageV4 = {
+  version: 4;
+  places: Place[];
+};
+
+const CURRENT_VERSION = 4;
 
 const toGeoJsonPoint = (coordinate: {
   latitude: number;
@@ -150,6 +155,20 @@ export const normalizeInventoryData = (parsed: any): Place[] => {
     return legacyItems.map((item) => migrateLegacyItem(item));
   }
 
+  // Version 4: With nested site/population attributes
+  if (parsed && parsed.version === 4 && Array.isArray(parsed.places)) {
+    const stored = parsed as InventoryStorageV4;
+    return stored.places.map((place) => ({
+      ...place,
+      userJournal: (place.userJournal || []).map((entry: HistoryEntry) => ({
+        ...entry,
+        media: entry.media || [],
+      })),
+      media: place.media || [],
+      changeHistory: place.changeHistory || [],
+    }));
+  }
+
   // Version 3: With change tracking (backwards compatible)
   if (parsed && parsed.version === 3 && Array.isArray(parsed.places)) {
     const stored = parsed as InventoryStorageV3;
@@ -197,7 +216,7 @@ export const loadInventory = async (): Promise<Place[]> => {
 
 export const saveInventory = async (places: Place[]) => {
   try {
-    const payload: InventoryStorageV3 = {
+    const payload: InventoryStorageV4 = {
       version: CURRENT_VERSION,
       places,
     };
