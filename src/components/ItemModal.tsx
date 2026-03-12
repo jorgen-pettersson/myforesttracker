@@ -553,114 +553,116 @@ export function ItemModal({
                 {item.attributes?.site && (
                   <View style={styles.attributesSection}>
                     <Text style={styles.viewLabel}>{t("attributes")}</Text>
-                    {(() => {
-                      const siteAttributes = item.attributes?.site || {};
-                      const siteIndexSpec = getSiteIndexSpec(siteAttributes);
+                    <View style={styles.siteCard}>
+                      {(() => {
+                        const siteAttributes = item.attributes?.site || {};
+                        const siteIndexSpec = getSiteIndexSpec(siteAttributes);
 
-                      return Object.keys(siteAttributes)
-                        .sort()
-                        .map((key) => {
-                          const value = siteAttributes[key];
+                        return Object.keys(siteAttributes)
+                          .sort()
+                          .map((key) => {
+                            const value = siteAttributes[key];
 
-                          if (
-                            siteIndexSpec &&
-                            (key === "species" || key === "speciesHeight")
-                          ) {
-                            return null; // Legacy fields already represented by SiteIndexSpec
-                          }
+                            if (
+                              siteIndexSpec &&
+                              (key === "species" || key === "speciesHeight")
+                            ) {
+                              return null; // Legacy fields already represented by SiteIndexSpec
+                            }
 
-                          if (key === "SiteIndexSpec") {
-                            const speciesValue = siteIndexSpec?.species;
-                            const heightValue = siteIndexSpec?.speciesHeight;
-                            const speciesCode =
-                              speciesValue && typeof speciesValue === "object"
-                                ? (speciesValue as any).code
-                                : speciesValue;
-                            const displayText = heightValue
-                              ? `${speciesCode}${heightValue}`
-                              : speciesCode || "";
+                            if (key === "SiteIndexSpec") {
+                              const speciesValue = siteIndexSpec?.species;
+                              const heightValue = siteIndexSpec?.speciesHeight;
+                              const speciesCode =
+                                speciesValue && typeof speciesValue === "object"
+                                  ? (speciesValue as any).code
+                                  : speciesValue;
+                              const displayText = heightValue
+                                ? `${speciesCode}${heightValue}`
+                                : speciesCode || "";
+
+                              return (
+                                <View key={key} style={styles.populationRow}>
+                                  <Text style={styles.populationKey}>
+                                    {getAttributeName("SiteIndexSpec")}:
+                                  </Text>
+                                  <Text style={styles.populationValue}>
+                                    {displayText}
+                                  </Text>
+                                </View>
+                              );
+                            }
+
+                            // Legacy species display when no composite exists
+                            if (key === "species") {
+                              const speciesValue = siteAttributes.species;
+                              const heightValue = siteAttributes.speciesHeight;
+                              const speciesCode =
+                                speciesValue && typeof speciesValue === "object"
+                                  ? (speciesValue as any).code
+                                  : speciesValue;
+                              const displayText = heightValue
+                                ? `${speciesCode}${heightValue}`
+                                : speciesCode || "";
+
+                              return (
+                                <View key={key} style={styles.populationRow}>
+                                  <Text style={styles.populationKey}>
+                                    {getAttributeName("SiteIndexSpec")}:
+                                  </Text>
+                                  <Text style={styles.populationValue}>
+                                    {displayText}
+                                  </Text>
+                                </View>
+                              );
+                            }
+
+                            if (key === "speciesHeight") {
+                              return null;
+                            }
+
+                            if (key === "areaHa") {
+                              return (
+                                <View key={key} style={styles.populationRow}>
+                                  <Text style={styles.populationKey}>
+                                    {getAttributeName(key)}:
+                                  </Text>
+                                  <Text style={styles.populationValue}>
+                                    {typeof value === "number"
+                                      ? value.toFixed(2)
+                                      : value || ""}
+                                  </Text>
+                                </View>
+                              );
+                            }
+
+                            if (value && typeof value === "object") {
+                              const displayValue = formatValue(value);
+                              return (
+                                <View key={key} style={styles.populationRow}>
+                                  <Text style={styles.populationKey}>
+                                    {getAttributeName(key)}:
+                                  </Text>
+                                  <Text style={styles.populationValue}>
+                                    {displayValue}
+                                  </Text>
+                                </View>
+                              );
+                            }
 
                             return (
-                              <View key={key} style={styles.viewField}>
-                                <Text style={styles.propertyKey}>
-                                  {getAttributeName("SiteIndexSpec")}:
-                                </Text>
-                                <Text style={styles.propertyValue}>
-                                  {displayText}
-                                </Text>
-                              </View>
-                            );
-                          }
-
-                          // Legacy species display when no composite exists
-                          if (key === "species") {
-                            const speciesValue = siteAttributes.species;
-                            const heightValue = siteAttributes.speciesHeight;
-                            const speciesCode =
-                              speciesValue && typeof speciesValue === "object"
-                                ? (speciesValue as any).code
-                                : speciesValue;
-                            const displayText = heightValue
-                              ? `${speciesCode}${heightValue}`
-                              : speciesCode || "";
-
-                            return (
-                              <View key={key} style={styles.viewField}>
-                                <Text style={styles.propertyKey}>
-                                  {getAttributeName("SiteIndexSpec")}:
-                                </Text>
-                                <Text style={styles.propertyValue}>
-                                  {displayText}
-                                </Text>
-                              </View>
-                            );
-                          }
-
-                          if (key === "speciesHeight") {
-                            return null;
-                          }
-
-                          if (key === "areaHa") {
-                            return (
-                              <View key={key} style={styles.viewField}>
-                                <Text style={styles.propertyKey}>
+                              <View key={key} style={styles.populationRow}>
+                                <Text style={styles.populationKey}>
                                   {getAttributeName(key)}:
                                 </Text>
-                                <Text style={styles.propertyValue}>
-                                  {typeof value === "number"
-                                    ? value.toFixed(2)
-                                    : value || ""}
+                                <Text style={styles.populationValue}>
+                                  {value || ""}
                                 </Text>
                               </View>
                             );
-                          }
-
-                          if (value && typeof value === "object") {
-                            const displayValue = formatValue(value);
-                            return (
-                              <View key={key} style={styles.viewField}>
-                                <Text style={styles.propertyKey}>
-                                  {getAttributeName(key)}:
-                                </Text>
-                                <Text style={styles.propertyValue}>
-                                  {displayValue}
-                                </Text>
-                              </View>
-                            );
-                          }
-
-                          return (
-                            <View key={key} style={styles.viewField}>
-                              <Text style={styles.propertyKey}>
-                                {getAttributeName(key)}:
-                              </Text>
-                              <Text style={styles.propertyValue}>
-                                {value || ""}
-                              </Text>
-                            </View>
-                          );
-                        });
-                    })()}
+                          });
+                      })()}
+                    </View>
                   </View>
                 )}
 
@@ -1352,14 +1354,7 @@ export function ItemModal({
             )}
 
             {/* GeoJSON Properties - only in view mode */}
-            {isViewMode &&
-              item.properties &&
-              Object.keys(item.properties).length > 0 && (
-                <View style={styles.propertiesSection}>
-                  <Text style={styles.viewLabel}>{t("properties")}</Text>
-                  {renderProperties(item.properties)}
-                </View>
-              )}
+            {/* Properties section removed in view mode */}
 
             {/* Item Media Section */}
             {isViewMode ? (

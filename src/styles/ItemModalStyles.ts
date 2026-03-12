@@ -259,6 +259,14 @@ export const itemModalStyles = StyleSheet.create({
   populationCarouselContent: {
     paddingRight: 12,
   },
+  siteCard: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    backgroundColor: "#f8f9fa",
+  },
   populationCard: {
     width: 250,
     maxWidth: "90%",
@@ -285,10 +293,9 @@ export const itemModalStyles = StyleSheet.create({
     color: "#888",
   },
   populationRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 4,
+    flexDirection: "column",
+    alignItems: "flex-start",
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: "#e6e6e6",
   },
@@ -296,12 +303,13 @@ export const itemModalStyles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#555",
+    marginBottom: 2,
   },
   populationValue: {
     fontSize: 12,
     color: "#333",
-    marginLeft: 8,
-    textAlign: "right",
+    marginLeft: 0,
+    textAlign: "left",
     flexShrink: 1,
   },
 });
