@@ -493,6 +493,125 @@ export function ItemModal({
               </>
             )}
 
+            {/* User journal - shown below notes in view and edit modes */}
+            {(isViewMode || isEditMode) && (
+              <View style={styles.historySection}>
+                <View style={styles.historySectionHeader}>
+                  <Text style={styles.historySectionTitle}>
+                    {t("userJournal")}
+                  </Text>
+                  {!isViewMode && !showAddHistory && (
+                    <TouchableOpacity
+                      style={styles.addHistoryButton}
+                      onPress={() => setShowAddHistory(true)}
+                    >
+                      <Text style={styles.addHistoryButtonText}>
+                        + {t("add")}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {!isViewMode && showAddHistory && (
+                  <View style={styles.addHistoryForm}>
+                    <Text style={styles.label}>{t("title")}</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder={t("title")}
+                      placeholderTextColor="#777"
+                      value={newHistoryTitle}
+                      onChangeText={setNewHistoryTitle}
+                    />
+                    <Text style={styles.label}>{t("body")}</Text>
+                    <TextInput
+                      style={[styles.input, styles.historyDescInput]}
+                      placeholder={t("body")}
+                      placeholderTextColor="#777"
+                      value={newHistoryBody}
+                      onChangeText={setNewHistoryBody}
+                      multiline
+                      numberOfLines={2}
+                    />
+
+                    {/* History Entry Media */}
+                    <View style={styles.historyMediaSection}>
+                      <Text style={styles.historyMediaLabel}>
+                        {t("media")} ({historyMediaCount}/{MAX_MEDIA_ITEMS})
+                      </Text>
+                      <View style={mediaStyles.mediaRow}>
+                        {historyMediaCount < MAX_MEDIA_ITEMS && (
+                          <TouchableOpacity
+                            style={mediaStyles.addMediaButton}
+                            onPress={handleAddHistoryMedia}
+                          >
+                            <Text style={mediaStyles.addMediaButtonText}>
+                              +
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                        <MediaGallery
+                          media={newHistoryMedia}
+                          onRemove={handleRemoveHistoryMedia}
+                          editable
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.addHistoryButtons}>
+                      <TouchableOpacity
+                        style={styles.addHistoryCancelBtn}
+                        onPress={() => {
+                          setShowAddHistory(false);
+                          setNewHistoryTitle("");
+                          setNewHistoryBody("");
+                          setNewHistoryMedia([]);
+                        }}
+                      >
+                        <Text style={styles.addHistoryCancelText}>
+                          {t("cancel")}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.addHistoryConfirmBtn}
+                        onPress={addHistoryEntry}
+                      >
+                        <Text style={styles.addHistoryConfirmText}>
+                          {t("add")}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {item.userJournal && item.userJournal.length > 0 ? (
+                  <View style={styles.historyList}>
+                    {[...item.userJournal].reverse().map((entry, index) => (
+                      <View key={index} style={styles.historyEntry}>
+                        <Text style={styles.historyTimestamp}>
+                          {formatDate(entry.timestamp)}
+                        </Text>
+                        <Text style={styles.historyEntryTitle}>
+                          {entry.title}
+                        </Text>
+                        {entry.body ? (
+                          <Text style={styles.historyDescription}>
+                            {entry.body}
+                          </Text>
+                        ) : null}
+                        {entry.media && entry.media.length > 0 && (
+                          <MediaGallery media={entry.media} />
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.noHistoryText}>
+                    {t("noUserJournalEntries")}
+                  </Text>
+                )}
+              </View>
+            )}
+
             {/* Area info */}
             {item.placeType === "Place_Area" && item.attributes?.areaHa && (
               <View style={styles.viewField}>
@@ -1449,128 +1568,6 @@ export function ItemModal({
                     editable
                   />
                 </View>
-              </View>
-            )}
-
-            {/* History Section - shown in view and edit modes */}
-            {(isViewMode || isEditMode) && (
-              <View style={styles.historySection}>
-                <View style={styles.historySectionHeader}>
-                  <Text style={styles.historySectionTitle}>
-                    {t("userJournal")}
-                  </Text>
-                  {!showAddHistory && (
-                    <TouchableOpacity
-                      style={styles.addHistoryButton}
-                      onPress={() => setShowAddHistory(true)}
-                    >
-                      <Text style={styles.addHistoryButtonText}>
-                        + {t("add")}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {showAddHistory && (
-                  <View style={styles.addHistoryForm}>
-                    <Text style={styles.label}>{t("title")}</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={t("title")}
-                      placeholderTextColor="#777"
-                      value={newHistoryTitle}
-                      onChangeText={setNewHistoryTitle}
-                    />
-                    <Text style={styles.label}>{t("body")}</Text>
-                    <TextInput
-                      style={[styles.input, styles.historyDescInput]}
-                      placeholder={t("body")}
-                      placeholderTextColor="#777"
-                      value={newHistoryBody}
-                      onChangeText={setNewHistoryBody}
-                      multiline
-                      numberOfLines={2}
-                    />
-
-                    {/* History Entry Media */}
-                    <View style={styles.historyMediaSection}>
-                      <Text style={styles.historyMediaLabel}>
-                        {t("media")} ({historyMediaCount}/{MAX_MEDIA_ITEMS})
-                      </Text>
-                      <View style={mediaStyles.mediaRow}>
-                        {historyMediaCount < MAX_MEDIA_ITEMS && (
-                          <TouchableOpacity
-                            style={[
-                              mediaStyles.addMediaButton,
-                              { width: 50, height: 50 },
-                            ]}
-                            onPress={handleAddHistoryMedia}
-                          >
-                            <Text style={mediaStyles.addMediaButtonText}>
-                              +
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                        <MediaGallery
-                          media={newHistoryMedia}
-                          onRemove={handleRemoveHistoryMedia}
-                          editable
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.addHistoryButtons}>
-                      <TouchableOpacity
-                        style={styles.addHistoryCancelBtn}
-                        onPress={() => {
-                          setShowAddHistory(false);
-                          setNewHistoryTitle("");
-                          setNewHistoryBody("");
-                          setNewHistoryMedia([]);
-                        }}
-                      >
-                        <Text style={styles.addHistoryCancelText}>
-                          {t("cancel")}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.addHistoryConfirmBtn}
-                        onPress={addHistoryEntry}
-                      >
-                        <Text style={styles.addHistoryConfirmText}>
-                          {t("add")}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {item.userJournal && item.userJournal.length > 0 ? (
-                  <View style={styles.historyList}>
-                    {[...item.userJournal].reverse().map((entry, index) => (
-                      <View key={index} style={styles.historyEntry}>
-                        <Text style={styles.historyTimestamp}>
-                          {formatDate(entry.timestamp)}
-                        </Text>
-                        <Text style={styles.historyEntryTitle}>
-                          {entry.title}
-                        </Text>
-                        {entry.body ? (
-                          <Text style={styles.historyDescription}>
-                            {entry.body}
-                          </Text>
-                        ) : null}
-                        {entry.media && entry.media.length > 0 && (
-                          <MediaGallery media={entry.media} />
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                ) : (
-                  <Text style={styles.noHistoryText}>
-                    {t("noUserJournalEntries")}
-                  </Text>
-                )}
               </View>
             )}
           </ScrollView>
