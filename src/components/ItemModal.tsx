@@ -1343,6 +1343,71 @@ export function ItemModal({
               </View>
             )}
 
+            {/* Change history - read-only view */}
+            {isViewMode && (
+              <View style={styles.changeHistorySection}>
+                <Text style={styles.viewLabel}>{t("history")}</Text>
+                {(() => {
+                  const changes = [...(item.changeHistory || [])].sort(
+                    (a, b) =>
+                      new Date(b.at).getTime() - new Date(a.at).getTime()
+                  );
+
+                  if (changes.length === 0) {
+                    return (
+                      <Text style={styles.noHistoryText}>
+                        {t("noHistoryEntries")}
+                      </Text>
+                    );
+                  }
+
+                  return (
+                    <ScrollView
+                      style={styles.changeHistoryList}
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator={false}
+                    >
+                      {changes.map((change) => {
+                        const actor = change.actor?.type;
+                        const actorId = change.actor?.id;
+                        const actorText = actor
+                          ? actorId
+                            ? `${actor} (${actorId})`
+                            : actor
+                          : null;
+                        const title = change.summary || change.kind;
+                        const detail = change.reason || null;
+
+                        return (
+                          <View
+                            key={change.id || `${change.kind}-${change.at}`}
+                            style={styles.changeHistoryEntry}
+                          >
+                            <Text style={styles.changeHistoryTimestamp}>
+                              {formatDate(change.at)}
+                            </Text>
+                            <Text style={styles.changeHistoryTitle}>
+                              {title}
+                            </Text>
+                            {detail ? (
+                              <Text style={styles.changeHistoryDetail}>
+                                {detail}
+                              </Text>
+                            ) : null}
+                            {actorText ? (
+                              <Text style={styles.changeHistoryMeta}>
+                                {actorText}
+                              </Text>
+                            ) : null}
+                          </View>
+                        );
+                      })}
+                    </ScrollView>
+                  );
+                })()}
+              </View>
+            )}
+
             {/* Created date - only in view mode */}
             {isViewMode && item.createdAt && (
               <View style={styles.viewField}>

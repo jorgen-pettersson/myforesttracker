@@ -168,6 +168,44 @@ export const itemModalStyles = StyleSheet.create({
     borderLeftColor: "#3498db",
     marginBottom: 6,
   },
+  changeHistorySection: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingTop: 10,
+    marginBottom: 10,
+  },
+  changeHistoryList: {
+    maxHeight: 260,
+  },
+  changeHistoryEntry: {
+    backgroundColor: "#f8f9fa",
+    padding: 10,
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: "#666",
+    marginBottom: 8,
+  },
+  changeHistoryTimestamp: {
+    fontSize: 11,
+    color: "#888",
+    marginBottom: 2,
+  },
+  changeHistoryTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 4,
+  },
+  changeHistoryDetail: {
+    fontSize: 12,
+    color: "#444",
+    marginBottom: 4,
+  },
+  changeHistoryMeta: {
+    fontSize: 11,
+    color: "#666",
+  },
   historyTimestamp: {
     fontSize: 10,
     color: "#888",
