@@ -763,6 +763,9 @@ function AppContent() {
         onCancel={cancelModal}
         onEdit={handleSwitchToEdit}
         onAddHistoryEntry={handleAddHistoryEntry}
+        resolvePlaceName={(id) =>
+          places.find((p) => p.id === id)?.attributes?.name || undefined
+        }
       />
 
       <AboutModal

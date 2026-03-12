@@ -53,6 +53,7 @@ interface ItemModalProps {
   onCancel: () => void;
   onEdit?: () => void;
   onAddHistoryEntry?: (itemId: string, history: HistoryEntry[]) => void;
+  resolvePlaceName?: (id: string) => string | undefined;
 }
 
 export function ItemModal({
@@ -64,6 +65,7 @@ export function ItemModal({
   onCancel,
   onEdit,
   onAddHistoryEntry,
+  resolvePlaceName,
 }: ItemModalProps) {
   const scrollViewRef = useRef<ScrollView>(null);
   const [newHistoryTitle, setNewHistoryTitle] = useState("");
@@ -498,7 +500,12 @@ export function ItemModal({
               <View style={styles.viewField}>
                 <Text style={styles.viewLabel}>{t("parentPlaceId")}</Text>
                 <Text style={styles.viewValue}>
-                  {item.attributes?.parentPlaceId || "-"}
+                  {(() => {
+                    const parentId = item.attributes?.parentPlaceId;
+                    if (!parentId) return "-";
+                    const resolved = resolvePlaceName?.(parentId);
+                    return resolved || parentId;
+                  })()}
                 </Text>
               </View>
             ) : (
