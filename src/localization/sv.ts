@@ -50,6 +50,7 @@ export const sv: Record<TranslationKeys, string> = {
   body: "Text",
   namePlaceholder: "Ange namn...",
   notesPlaceholder: "Ange anteckningar...",
+  parentPlaceId: "Överordnat objekt",
   created: "Skapad",
   area: "Yta",
   color: "Färg",

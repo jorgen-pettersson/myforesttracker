@@ -493,6 +493,36 @@ export function ItemModal({
               </>
             )}
 
+            {/* Parent place */}
+            {isViewMode ? (
+              <View style={styles.viewField}>
+                <Text style={styles.viewLabel}>{t("parentPlaceId")}</Text>
+                <Text style={styles.viewValue}>
+                  {item.attributes?.parentPlaceId || "-"}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.viewField}>
+                <Text style={styles.label}>{t("parentPlaceId")}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={t("parentPlaceId")}
+                  value={item.attributes?.parentPlaceId || ""}
+                  onChangeText={(text) =>
+                    onChangeItem({
+                      ...item,
+                      attributes: {
+                        ...item.attributes,
+                        parentPlaceId: text.trim(),
+                      },
+                    })
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            )}
+
             {/* User journal - shown below notes in view and edit modes */}
             {(isViewMode || isEditMode) && (
               <View style={styles.historySection}>

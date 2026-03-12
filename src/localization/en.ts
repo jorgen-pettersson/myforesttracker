@@ -48,6 +48,7 @@ export const en = {
   body: "Body",
   namePlaceholder: "Enter name...",
   notesPlaceholder: "Enter notes...",
+  parentPlaceId: "Parent place",
   created: "Created",
   area: "Area",
   color: "Color",
