@@ -9,6 +9,7 @@ import {
 } from "../../features/inventory";
 import { mapStyles as styles } from "../../styles";
 import { Crosshair } from "../Crosshair";
+import { getPlaceAreaHa } from "../../utils";
 
 const DEFAULT_AREA_COLOR = "#00FF00"; // Green
 
@@ -355,7 +356,7 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
                             {item.attributes?.name}
                           </Text>
                           <Text style={labelStyles.area}>
-                            {formatAreaHa(item.attributes?.areaHa)}
+                            {formatAreaHa(getPlaceAreaHa(item))}
                           </Text>
                         </View>
                       </Marker>

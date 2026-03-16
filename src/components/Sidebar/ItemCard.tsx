@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Place } from "../../features/inventory";
 import { itemCardStyles as styles } from "../../styles";
-import { formatArea } from "../../utils";
+import { formatArea, getPlaceAreaHa } from "../../utils";
 
 interface ItemCardProps {
   item: Place;
@@ -42,11 +42,16 @@ export function ItemCard({
       <Text style={styles.itemDetail}>
         {item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}
       </Text>
-      {item.placeType === "Place_Area" && item.attributes?.areaHa && (
-        <Text style={styles.itemDetail}>
-          Area: {formatArea(item.attributes.areaHa * 10000)}
-        </Text>
-      )}
+      {item.placeType === "Place_Area" &&
+        (() => {
+          const areaHa = getPlaceAreaHa(item);
+          if (areaHa === undefined) return null;
+          return (
+            <Text style={styles.itemDetail}>
+              Area: {formatArea(areaHa * 10000)}
+            </Text>
+          );
+        })()}
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.repositionButton}

@@ -1,1 +1,2 @@
-export * from './formatArea';
+export * from "./formatArea";
+export * from "./placeArea";
