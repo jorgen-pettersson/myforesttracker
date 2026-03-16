@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
@@ -9,6 +11,15 @@ def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
     localPropertiesFile.withInputStream { localProperties.load(it) }
 }
+
+// Derive app version from package.json
+def packageJsonFile = rootProject.file("../package.json")
+def packageJson = packageJsonFile.exists() ? new JsonSlurper().parse(packageJsonFile) : [:]
+def versionNameFromPackage = packageJson.version ?: "1.0.0"
+def versionParts = (versionNameFromPackage.tokenize('.') + [0, 0, 0]).take(3)
+def (vMajor, vMinor, vPatch) = versionParts.collect { it.toInteger() }
+// versionCode strategy: major * 10000 + minor * 100 + patch (supports up to 99.99.99)
+def versionCodeFromPackage = (vMajor * 10000) + (vMinor * 100) + vPatch
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -90,8 +101,8 @@ android {
         applicationId "com.jknowledge.myforesttracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode versionCodeFromPackage
+        versionName versionNameFromPackage
         manifestPlaceholders = [MAPS_API_KEY: localProperties.getProperty('MAPS_API_KEY', '')]
     }
     signingConfigs {
