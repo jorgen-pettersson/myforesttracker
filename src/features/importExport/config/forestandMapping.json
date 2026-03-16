@@ -295,7 +295,7 @@
       "extraction": {
         "species": "spec.species.code (transformed via ObsS_Species codeTransformations)",
         "speciesHeight": "result.code (numeric passthrough)"
-      }
+      } 
     }
   }
 }
