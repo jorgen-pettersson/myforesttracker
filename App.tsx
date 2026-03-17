@@ -408,7 +408,10 @@ function AppContent() {
       return;
     }
 
-    if (drawingMode === "split" && splitItem) {
+    if (
+      (drawingMode === "split" || drawingMode === "splitAdjust") &&
+      splitItem
+    ) {
       setAreaPoints([...areaPoints, coordinate]);
       return;
     }
