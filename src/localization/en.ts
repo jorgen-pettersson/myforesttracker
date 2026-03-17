@@ -123,8 +123,10 @@ export const en = {
   // Map
   confirmLocation: "Confirm",
   addAreaPoint: "Add Point",
+  addSplitPoint: "Add Split Point",
   setNewPosition: "Set New Position",
   completeReposition: "Done",
+  completeSplit: "Complete Split",
   cancelReposition: "Cancel",
 
   // Language names

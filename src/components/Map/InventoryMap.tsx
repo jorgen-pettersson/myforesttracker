@@ -235,6 +235,7 @@ interface InventoryMapProps {
   repositionType?: "point" | "area";
   onConfirmLocation: () => void;
   onCompleteReposition?: () => void;
+  onCompleteSplit?: () => void;
   onCancelReposition?: () => void;
   onItemPress?: (item: Place) => void;
 }
@@ -260,6 +261,7 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
       repositionType,
       onConfirmLocation,
       onCompleteReposition,
+      onCompleteSplit,
       onCancelReposition,
       onItemPress,
     },
@@ -384,6 +386,7 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
           repositionType={repositionType}
           onConfirm={onConfirmLocation}
           onCompleteReposition={onCompleteReposition}
+          onCompleteSplit={onCompleteSplit}
           onCancelReposition={onCancelReposition}
         />
       </View>

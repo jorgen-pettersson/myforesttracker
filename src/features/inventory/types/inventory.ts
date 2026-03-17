@@ -14,7 +14,7 @@ export interface Region {
   longitudeDelta: number;
 }
 
-export type DrawingMode = "none" | "point" | "area" | "reposition";
+export type DrawingMode = "none" | "point" | "area" | "reposition" | "split";
 
 export interface MediaItem {
   id: string;

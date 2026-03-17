@@ -125,8 +125,10 @@ export const sv: Record<TranslationKeys, string> = {
   // Map
   confirmLocation: "Bekräfta",
   addAreaPoint: "Lägg till",
+  addSplitPoint: "Lägg till delningspunkt",
   setNewPosition: "Sätt ny position",
   completeReposition: "Klar",
+  completeSplit: "Slutför delning",
   cancelReposition: "Avbryt",
 
   // Language names

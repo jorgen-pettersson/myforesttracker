@@ -10,6 +10,7 @@ interface CrosshairProps {
   repositionType?: "point" | "area";
   onConfirm: () => void;
   onCompleteReposition?: () => void;
+  onCompleteSplit?: () => void;
   onCancelReposition?: () => void;
 }
 
@@ -19,6 +20,7 @@ export function Crosshair({
   repositionType,
   onConfirm,
   onCompleteReposition,
+  onCompleteSplit,
   onCancelReposition,
 }: CrosshairProps) {
   const { t } = useLocalization();
@@ -38,6 +40,9 @@ export function Crosshair({
         return t("setNewPosition");
       }
       return `${t("addAreaPoint")} ${areaPointsCount + 1}`;
+    }
+    if (drawingMode === "split") {
+      return `${t("addSplitPoint")} ${areaPointsCount + 1}`;
     }
     return "";
   };
@@ -64,6 +69,27 @@ export function Crosshair({
               <Text style={styles.confirmButtonText}>
                 {t("completeReposition")}
               </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.cancelRepositionButton}
+            onPress={onCancelReposition}
+          >
+            <Text style={styles.confirmButtonText}>
+              {t("cancelReposition")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {drawingMode === "split" && (
+        <View style={styles.repositionButtons}>
+          {areaPointsCount >= 2 && onCompleteSplit && (
+            <TouchableOpacity
+              style={styles.completeButton}
+              onPress={onCompleteSplit}
+            >
+              <Text style={styles.confirmButtonText}>{t("completeSplit")}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity

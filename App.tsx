@@ -39,6 +39,7 @@ import {
   useLocalization,
   Language,
 } from "./src/localization";
+import * as turf from "@turf/turf";
 
 type ModalMode = "view" | "edit" | "create";
 
@@ -79,6 +80,7 @@ function AppContent() {
   const [currentItem, setCurrentItem] = useState<Partial<Place>>({});
   const [modalMode, setModalMode] = useState<ModalMode>("create");
   const [repositionItem, setRepositionItem] = useState<Place | null>(null);
+  const [splitItem, setSplitItem] = useState<Place | null>(null);
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -405,6 +407,11 @@ function AppContent() {
       return;
     }
 
+    if (drawingMode === "split" && splitItem) {
+      setAreaPoints([...areaPoints, coordinate]);
+      return;
+    }
+
     if (drawingMode === "point") {
       const now = new Date().toISOString();
       const parentPlaceId = findParentForPoint(coordinate);
@@ -562,6 +569,16 @@ function AppContent() {
     }
   };
 
+  const handleSplit = (item: Place) => {
+    if (item.placeType !== "Place_Area") {
+      return;
+    }
+    setSplitItem(item);
+    setDrawingMode("split");
+    setSidebarVisible(false);
+    setAreaPoints([]);
+  };
+
   const completeReposition = () => {
     if (repositionItem && repositionItem.placeType === "Place_Area") {
       if (areaPoints.length < 3) {
@@ -591,8 +608,142 @@ function AppContent() {
     setAreaPoints([]);
   };
 
+  const completeSplit = () => {
+    if (!splitItem || splitItem.placeType !== "Place_Area") {
+      return;
+    }
+    if (areaPoints.length < 2) {
+      Alert.alert(t("error"), "Add at least two points to split the area.");
+      return;
+    }
+
+    const geometry = getPrimaryGeometry(splitItem);
+    if (!geometry || geometry.type !== "Polygon") {
+      Alert.alert(t("error"), "Only simple polygons can be split right now.");
+      return;
+    }
+
+    const outer = geometry.coordinates[0] as number[][];
+    if (!outer || outer.length < 3) {
+      Alert.alert(t("error"), "Invalid polygon for split.");
+      return;
+    }
+
+    const closedOuter = [...outer];
+    const [firstLng, firstLat] = closedOuter[0];
+    const [lastLng, lastLat] = closedOuter[closedOuter.length - 1];
+    if (firstLng !== lastLng || firstLat !== lastLat) {
+      closedOuter.push([firstLng, firstLat]);
+    }
+
+    const lineCoords = areaPoints.map((p) => [p.longitude, p.latitude]);
+    if (lineCoords.length < 2) {
+      Alert.alert(t("error"), "Add at least two points to split.");
+      return;
+    }
+
+    const polyFeature = turf.polygon([closedOuter]);
+    const lineFeature = turf.lineString(lineCoords);
+
+    let splitResult: any = null;
+    try {
+      splitResult = (turf as any).polygonSplit
+        ? (turf as any).polygonSplit(polyFeature, lineFeature)
+        : null;
+    } catch (err) {
+      console.warn("Split failed", err);
+    }
+
+    if (
+      !splitResult ||
+      !splitResult.features ||
+      splitResult.features.length < 2
+    ) {
+      Alert.alert(
+        t("error"),
+        "Split did not produce two areas. Adjust the line and try again."
+      );
+      return;
+    }
+
+    const pieces = splitResult.features.filter(
+      (f: any) =>
+        f.geometry?.type === "Polygon" || f.geometry?.type === "MultiPolygon"
+    );
+    if (pieces.length < 2) {
+      Alert.alert(
+        t("error"),
+        "Split did not produce two valid polygon pieces."
+      );
+      return;
+    }
+
+    const geometryAreaHa = (geom: GeoJSON.Geometry): number | undefined => {
+      if (geom.type === "Polygon") {
+        const ring = (geom.coordinates as number[][][])[0];
+        if (!ring) return undefined;
+        const coords = ring.map((c) => ({ latitude: c[1], longitude: c[0] }));
+        return calculateArea(coords) / 10000;
+      }
+      if (geom.type === "MultiPolygon") {
+        const poly = (geom.coordinates as number[][][][])[0]?.[0];
+        if (!poly) return undefined;
+        const coords = poly.map((c) => ({ latitude: c[1], longitude: c[0] }));
+        return calculateArea(coords) / 10000;
+      }
+      return undefined;
+    };
+
+    const now = new Date().toISOString();
+
+    Alert.alert(
+      "Create subarea",
+      "Choose which piece becomes the new subarea",
+      pieces.slice(0, 2).map((feat: any, idx: number) => {
+        const areaHa = geometryAreaHa(feat.geometry) || 0;
+        return {
+          text: `Piece ${idx + 1} (${areaHa.toFixed(2)} ha)`,
+          onPress: () => {
+            const newPlace: Place = {
+              id: Date.now().toString(),
+              placeType: "Place_Area",
+              source: {
+                system: "internal",
+                importedAt: now,
+              },
+              attributes: {
+                name: `${splitItem.attributes?.name || "Subarea"} (split)`,
+                notes: splitItem.attributes?.notes,
+                parentPlaceId: splitItem.id,
+                color: splitItem.attributes?.color,
+                areaHa: areaHa,
+              },
+              geometries: [
+                {
+                  id: generateGeometryId(),
+                  geometry: feat.geometry as GeoJSON.Geometry,
+                  crs: "EPSG:4326",
+                },
+              ],
+              visible: true,
+              createdAt: now,
+              userJournal: [],
+              media: [],
+            };
+
+            addItem(newPlace);
+            setSplitItem(null);
+            setDrawingMode("none");
+            setAreaPoints([]);
+          },
+        };
+      })
+    );
+  };
+
   const cancelReposition = () => {
     setRepositionItem(null);
+    setSplitItem(null);
     setDrawingMode("none");
     setAreaPoints([]);
   };
@@ -717,6 +868,7 @@ function AppContent() {
         }
         onConfirmLocation={confirmLocation}
         onCompleteReposition={completeReposition}
+        onCompleteSplit={completeSplit}
         onCancelReposition={cancelReposition}
         onItemPress={handleView}
       />
@@ -749,6 +901,7 @@ function AppContent() {
         onDelete={deleteItem}
         onView={handleView}
         onReposition={handleReposition}
+        onSplit={handleSplit}
         onExport={handleExport}
         onImport={handleImport}
         onClose={() => setSidebarVisible(false)}

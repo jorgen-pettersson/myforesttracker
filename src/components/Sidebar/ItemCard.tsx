@@ -10,6 +10,7 @@ interface ItemCardProps {
   onDelete: (id: string) => void;
   onView: (item: Place) => void;
   onReposition: (item: Place) => void;
+  onSplit: (item: Place) => void;
 }
 
 export function ItemCard({
@@ -18,6 +19,7 @@ export function ItemCard({
   onDelete,
   onView,
   onReposition,
+  onSplit,
 }: ItemCardProps) {
   return (
     <TouchableOpacity
@@ -59,6 +61,14 @@ export function ItemCard({
         >
           <Text style={styles.buttonText}>Move</Text>
         </TouchableOpacity>
+        {item.placeType === "Place_Area" && (
+          <TouchableOpacity
+            style={styles.repositionButton}
+            onPress={() => onSplit(item)}
+          >
+            <Text style={styles.buttonText}>Split</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => onDelete(item.id)}

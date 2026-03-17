@@ -19,6 +19,7 @@ interface SidebarProps {
   onDelete: (id: string) => void;
   onView: (item: Place) => void;
   onReposition: (item: Place) => void;
+  onSplit: (item: Place) => void;
   onExport: (format: "json" | "csv" | "geojson" | "all") => void;
   onImport: () => void;
   onClose: () => void;
@@ -31,6 +32,7 @@ export function Sidebar({
   onDelete,
   onView,
   onReposition,
+  onSplit,
   onExport,
   onImport,
   onClose,
@@ -82,6 +84,7 @@ export function Sidebar({
               onDelete={onDelete}
               onView={onView}
               onReposition={onReposition}
+              onSplit={onSplit}
             />
           ))}
         </ScrollView>
