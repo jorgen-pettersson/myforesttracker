@@ -576,11 +576,12 @@ function AppContent() {
     }
 
     // If this is an existing subarea with stored split metadata, enter adjust mode
+    // User should draw a fresh line (do not preload old points)
     if (item.attributes?.splitLine && item.attributes?.splitFromParentId) {
       setSplitItem(item);
       setDrawingMode("splitAdjust");
       setSidebarVisible(false);
-      setAreaPoints(item.attributes.splitLine as Coordinate[]);
+      setAreaPoints([]);
       return;
     }
 
