@@ -658,7 +658,7 @@ function AppContent() {
     const lineFeature = turf.lineString(uniqueLine);
 
     // Require at least two intersections with the polygon boundary
-    const intersections = turf.lineIntersect(lineFeature, polyFeature);
+    const intersections = (turf as any).lineIntersect(lineFeature, polyFeature);
     if (!intersections || intersections.features.length < 2) {
       Alert.alert(
         t("error"),
@@ -667,35 +667,30 @@ function AppContent() {
       return;
     }
 
-    let splitResult: any = null;
+    // Use a thin buffer around the split line and subtract from the polygon
+    let pieces: any[] = [];
     try {
-      splitResult = (turf as any).polygonSplit
-        ? (turf as any).polygonSplit(polyFeature, lineFeature)
-        : null;
+      const buffered = (turf as any).buffer(lineFeature, 0.0005, {
+        units: "kilometers",
+      });
+      const diff = (turf as any).difference(polyFeature, buffered);
+      if (diff && diff.geometry) {
+        if (diff.geometry.type === "Polygon") {
+          pieces = [diff];
+        } else if (diff.geometry.type === "MultiPolygon") {
+          pieces = (diff.geometry.coordinates as number[][][][]).map((coords) =>
+            (turf as any).polygon(coords)
+          );
+        }
+      }
     } catch (err) {
       console.warn("Split failed", err);
     }
 
-    if (
-      !splitResult ||
-      !splitResult.features ||
-      splitResult.features.length < 2
-    ) {
-      Alert.alert(
-        t("error"),
-        "Split did not produce two areas. Draw the line fully across the area and try again."
-      );
-      return;
-    }
-
-    const pieces = splitResult.features.filter(
-      (f: any) =>
-        f.geometry?.type === "Polygon" || f.geometry?.type === "MultiPolygon"
-    );
     if (pieces.length < 2) {
       Alert.alert(
         t("error"),
-        "Split did not produce two valid polygon pieces."
+        "Split did not produce two areas. Draw the line fully across the area and try again."
       );
       return;
     }
