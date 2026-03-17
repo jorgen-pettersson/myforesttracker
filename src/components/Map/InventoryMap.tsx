@@ -1,6 +1,11 @@
 import React, { useRef, useImperativeHandle, forwardRef } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, {
+  Marker,
+  Polygon,
+  Polyline,
+  PROVIDER_GOOGLE,
+} from "react-native-maps";
 import {
   Place,
   Region,
@@ -370,14 +375,25 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
               return null;
             })}
 
-          {areaPoints.length > 0 && (
-            <Polygon
-              coordinates={areaPoints}
-              strokeColor="blue"
-              fillColor="rgba(0,0,255,0.2)"
-              strokeWidth={2}
-            />
-          )}
+          {areaPoints.length > 0 &&
+            (drawingMode === "split" || drawingMode === "splitAdjust") && (
+              <Polyline
+                coordinates={areaPoints}
+                strokeColor="blue"
+                strokeWidth={3}
+              />
+            )}
+
+          {areaPoints.length > 0 &&
+            drawingMode !== "split" &&
+            drawingMode !== "splitAdjust" && (
+              <Polygon
+                coordinates={areaPoints}
+                strokeColor="blue"
+                fillColor="rgba(0,0,255,0.2)"
+                strokeWidth={2}
+              />
+            )}
         </MapView>
 
         <Crosshair
