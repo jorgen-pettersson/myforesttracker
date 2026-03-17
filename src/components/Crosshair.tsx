@@ -41,7 +41,7 @@ export function Crosshair({
       }
       return `${t("addAreaPoint")} ${areaPointsCount + 1}`;
     }
-    if (drawingMode === "split") {
+    if (drawingMode === "split" || drawingMode === "splitAdjust") {
       return `${t("addSplitPoint")} ${areaPointsCount + 1}`;
     }
     return "";
@@ -82,7 +82,7 @@ export function Crosshair({
         </View>
       )}
 
-      {drawingMode === "split" && (
+      {(drawingMode === "split" || drawingMode === "splitAdjust") && (
         <View style={styles.repositionButtons}>
           {areaPointsCount >= 2 && onCompleteSplit && (
             <TouchableOpacity

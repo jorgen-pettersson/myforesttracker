@@ -574,6 +574,17 @@ function AppContent() {
     if (item.placeType !== "Place_Area") {
       return;
     }
+
+    // If this is an existing subarea with stored split metadata, enter adjust mode
+    if (item.attributes?.splitLine && item.attributes?.splitFromParentId) {
+      setSplitItem(item);
+      setDrawingMode("splitAdjust");
+      setSidebarVisible(false);
+      setAreaPoints(item.attributes.splitLine as Coordinate[]);
+      return;
+    }
+
+    // Otherwise start a new split on this parent area
     setSplitItem(item);
     setDrawingMode("split");
     setSidebarVisible(false);
@@ -618,7 +629,20 @@ function AppContent() {
       return;
     }
 
-    const geometry = getPrimaryGeometry(splitItem);
+    // Determine which polygon to split: parent if adjusting, else the selected item itself
+    const isAdjusting =
+      !!splitItem.attributes?.splitLine &&
+      !!splitItem.attributes?.splitFromParentId;
+    const parentTarget = isAdjusting
+      ? places.find((p) => p.id === splitItem.attributes?.splitFromParentId)
+      : splitItem;
+
+    if (!parentTarget) {
+      Alert.alert(t("error"), "Parent area not found for split.");
+      return;
+    }
+
+    const geometry = getPrimaryGeometry(parentTarget);
     if (!geometry || geometry.type !== "Polygon") {
       Alert.alert(t("error"), "Only simple polygons can be split right now.");
       return;
@@ -725,41 +749,65 @@ function AppContent() {
     const now = new Date().toISOString();
 
     Alert.alert(
-      "Create subarea",
-      "Choose which piece becomes the new subarea",
+      isAdjusting ? "Adjust subarea" : "Create subarea",
+      isAdjusting
+        ? "Choose which piece becomes the subarea after adjusting the split line"
+        : "Choose which piece becomes the new subarea",
       pieces.slice(0, 2).map((feat: any, idx: number) => {
         const areaHa = geometryAreaHa(feat.geometry) || 0;
         return {
           text: `Piece ${idx + 1} (${areaHa.toFixed(2)} ha)`,
           onPress: () => {
-            const newPlace: Place = {
-              id: Date.now().toString(),
-              placeType: "Place_Area",
-              source: {
-                system: "internal",
-                importedAt: now,
-              },
-              attributes: {
-                name: `${splitItem.attributes?.name || "Subarea"} (split)`,
-                notes: splitItem.attributes?.notes,
-                parentPlaceId: splitItem.id,
-                color: splitItem.attributes?.color,
-                areaHa: areaHa,
-              },
-              geometries: [
-                {
-                  id: generateGeometryId(),
-                  geometry: feat.geometry as GeoJSON.Geometry,
-                  crs: "EPSG:4326",
+            if (isAdjusting) {
+              // Update existing subarea geometry
+              updateItem({
+                ...splitItem,
+                geometries: [
+                  {
+                    id: generateGeometryId(),
+                    geometry: feat.geometry as GeoJSON.Geometry,
+                    crs: "EPSG:4326",
+                  },
+                ],
+                attributes: {
+                  ...splitItem.attributes,
+                  areaHa: areaHa,
+                  splitLine: areaPoints,
                 },
-              ],
-              visible: true,
-              createdAt: now,
-              userJournal: [],
-              media: [],
-            };
+              });
+            } else {
+              const newPlace: Place = {
+                id: Date.now().toString(),
+                placeType: "Place_Area",
+                source: {
+                  system: "internal",
+                  importedAt: now,
+                },
+                attributes: {
+                  name: `${splitItem.attributes?.name || "Subarea"} (split)`,
+                  notes: splitItem.attributes?.notes,
+                  parentPlaceId: splitItem.id,
+                  splitFromParentId: splitItem.id,
+                  splitLine: areaPoints,
+                  color: splitItem.attributes?.color,
+                  areaHa: areaHa,
+                },
+                geometries: [
+                  {
+                    id: generateGeometryId(),
+                    geometry: feat.geometry as GeoJSON.Geometry,
+                    crs: "EPSG:4326",
+                  },
+                ],
+                visible: true,
+                createdAt: now,
+                userJournal: [],
+                media: [],
+              };
 
-            addItem(newPlace);
+              addItem(newPlace);
+            }
+
             setSplitItem(null);
             setDrawingMode("none");
             setAreaPoints([]);

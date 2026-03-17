@@ -14,7 +14,13 @@ export interface Region {
   longitudeDelta: number;
 }
 
-export type DrawingMode = "none" | "point" | "area" | "reposition" | "split";
+export type DrawingMode =
+  | "none"
+  | "point"
+  | "area"
+  | "reposition"
+  | "split"
+  | "splitAdjust";
 
 export interface MediaItem {
   id: string;
@@ -74,6 +80,8 @@ export interface PlaceAttributes {
   population?: PopulationData[];
   color?: string;
   parentPlaceId?: string;
+  splitFromParentId?: string;
+  splitLine?: Coordinate[];
   [key: string]: any;
 }
 

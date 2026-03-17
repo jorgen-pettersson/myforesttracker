@@ -66,7 +66,9 @@ export function ItemCard({
             style={styles.repositionButton}
             onPress={() => onSplit(item)}
           >
-            <Text style={styles.buttonText}>Split</Text>
+            <Text style={styles.buttonText}>
+              {item.attributes?.splitLine ? "Adjust split" : "Split"}
+            </Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
