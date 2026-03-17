@@ -642,8 +642,30 @@ function AppContent() {
       return;
     }
 
+    // Ensure distinct points and a non-zero length line
+    const uniqueLine = lineCoords.filter((pt, idx, arr) => {
+      if (idx === 0) return true;
+      const prev = arr[idx - 1];
+      return !(pt[0] === prev[0] && pt[1] === prev[1]);
+    });
+
+    if (uniqueLine.length < 2) {
+      Alert.alert(t("error"), "Split line is too short. Add distinct points.");
+      return;
+    }
+
     const polyFeature = turf.polygon([closedOuter]);
-    const lineFeature = turf.lineString(lineCoords);
+    const lineFeature = turf.lineString(uniqueLine);
+
+    // Require at least two intersections with the polygon boundary
+    const intersections = turf.lineIntersect(lineFeature, polyFeature);
+    if (!intersections || intersections.features.length < 2) {
+      Alert.alert(
+        t("error"),
+        "Draw the line across the area so it crosses the boundary twice."
+      );
+      return;
+    }
 
     let splitResult: any = null;
     try {
@@ -661,7 +683,7 @@ function AppContent() {
     ) {
       Alert.alert(
         t("error"),
-        "Split did not produce two areas. Adjust the line and try again."
+        "Split did not produce two areas. Draw the line fully across the area and try again."
       );
       return;
     }
