@@ -40,6 +40,7 @@ import {
   Language,
 } from "./src/localization";
 import * as turf from "@turf/turf";
+import polygonClipping from "polygon-clipping";
 
 type ModalMode = "view" | "edit" | "create";
 
@@ -667,22 +668,32 @@ function AppContent() {
       return;
     }
 
-    // Use a thin buffer around the split line and subtract from the polygon
+    // Use a thin buffer around the split line and subtract via polygon-clipping
     let pieces: any[] = [];
     try {
       const buffered = (turf as any).buffer(lineFeature, 0.0005, {
         units: "kilometers",
       });
-      const diff = (turf as any).difference(polyFeature, buffered);
-      if (diff && diff.geometry) {
-        if (diff.geometry.type === "Polygon") {
-          pieces = [diff];
-        } else if (diff.geometry.type === "MultiPolygon") {
-          pieces = (diff.geometry.coordinates as number[][][][]).map((coords) =>
-            (turf as any).polygon(coords)
-          );
-        }
+
+      // Collect clipping polygons from buffer (Polygon or MultiPolygon)
+      const bufferPolys: number[][][][] = [];
+      if (buffered?.geometry?.type === "Polygon") {
+        bufferPolys.push(buffered.geometry.coordinates as number[][][]);
+      } else if (buffered?.geometry?.type === "MultiPolygon") {
+        bufferPolys.push(
+          ...((buffered.geometry.coordinates as number[][][][]) || [])
+        );
       }
+
+      // Perform difference: subject is the outer ring (no holes handled for now)
+      const diffResult = polygonClipping.difference(
+        [closedOuter] as any,
+        ...(bufferPolys as any)
+      );
+
+      pieces = (diffResult || [])
+        .filter((poly: any) => poly?.length)
+        .map((poly: any) => (turf as any).polygon(poly as any));
     } catch (err) {
       console.warn("Split failed", err);
     }
