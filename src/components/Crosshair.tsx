@@ -24,7 +24,7 @@ export function Crosshair({
   onCancelReposition,
 }: CrosshairProps) {
   const { t } = useLocalization();
-  if (drawingMode === "none") {
+  if (drawingMode === "none" || drawingMode === "splitSelect") {
     return null;
   }
 

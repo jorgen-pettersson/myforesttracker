@@ -20,7 +20,8 @@ export type DrawingMode =
   | "area"
   | "reposition"
   | "split"
-  | "splitAdjust";
+  | "splitAdjust"
+  | "splitSelect";
 
 export interface MediaItem {
   id: string;

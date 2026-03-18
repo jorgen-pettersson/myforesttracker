@@ -243,6 +243,8 @@ interface InventoryMapProps {
   onCompleteSplit?: () => void;
   onCancelReposition?: () => void;
   onItemPress?: (item: Place) => void;
+  onMapPress?: (coord: Coordinate) => void;
+  splitPieces?: { geometry: GeoJSON.Geometry; selected?: boolean }[];
 }
 
 export interface InventoryMapRef {
@@ -269,6 +271,8 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
       onCompleteSplit,
       onCancelReposition,
       onItemPress,
+      onMapPress,
+      splitPieces,
     },
     ref
   ) => {
@@ -304,9 +308,56 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
           initialRegion={region}
           mapType={mapType}
           onRegionChangeComplete={onRegionChange}
+          onPress={(e) =>
+            onMapPress?.({
+              latitude: e.nativeEvent.coordinate.latitude,
+              longitude: e.nativeEvent.coordinate.longitude,
+            })
+          }
           showsUserLocation
           showsMyLocationButton
         >
+          {splitPieces &&
+            splitPieces.map((piece, idx) => {
+              if (
+                !piece.geometry ||
+                (piece.geometry.type !== "Polygon" &&
+                  piece.geometry.type !== "MultiPolygon")
+              ) {
+                return null;
+              }
+
+              const makeCoords = (coords: number[][]) =>
+                coords.map((c) => ({ latitude: c[1], longitude: c[0] }));
+
+              const polygons: Coordinate[][] = [];
+              if (piece.geometry.type === "Polygon") {
+                const outer = (piece.geometry.coordinates as number[][][])[0];
+                if (outer) polygons.push(makeCoords(outer));
+              } else if (piece.geometry.type === "MultiPolygon") {
+                const polys = piece.geometry.coordinates as number[][][][];
+                polys.forEach((poly) => {
+                  const outer = poly[0];
+                  if (outer) polygons.push(makeCoords(outer));
+                });
+              }
+
+              const fill = piece.selected
+                ? "rgba(0,200,0,0.35)"
+                : "rgba(255,200,0,0.25)";
+              const stroke = piece.selected ? "#0a8a0a" : "#cfa000";
+
+              return polygons.map((coords, pIdx) => (
+                <Polygon
+                  key={`split-piece-${idx}-${pIdx}`}
+                  coordinates={coords}
+                  strokeColor={stroke}
+                  fillColor={fill}
+                  strokeWidth={3}
+                />
+              ));
+            })}
+
           {items
             .filter((item) => item.visible !== false)
             .map((item) => {
