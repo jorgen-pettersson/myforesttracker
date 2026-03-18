@@ -656,7 +656,7 @@ function AppContent() {
       return;
     }
     if (areaPoints.length < 2) {
-      Alert.alert(t("error"), "Add at least two points to split the area.");
+      Alert.alert(t("error"), t("splitNeedTwoPoints"));
       return;
     }
 
@@ -678,7 +678,7 @@ function AppContent() {
       !geometry ||
       (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")
     ) {
-      Alert.alert(t("error"), "Unsupported geometry for split.");
+      Alert.alert(t("error"), t("splitUnsupportedGeometry"));
       return;
     }
 
@@ -698,7 +698,7 @@ function AppContent() {
       baseOuter = candidatePolys[0][0];
     }
     if (!baseOuter || baseOuter.length < 3) {
-      Alert.alert(t("error"), "Invalid polygon for split.");
+      Alert.alert(t("error"), t("splitInvalidPolygon"));
       return;
     }
 
@@ -711,7 +711,7 @@ function AppContent() {
 
     const lineCoords = areaPoints.map((p) => [p.longitude, p.latitude]);
     if (lineCoords.length < 2) {
-      Alert.alert(t("error"), "Add at least two points to split.");
+      Alert.alert(t("error"), t("splitNeedTwoPoints"));
       return;
     }
 
@@ -723,7 +723,7 @@ function AppContent() {
     });
 
     if (uniqueLine.length < 2) {
-      Alert.alert(t("error"), "Split line is too short. Add distinct points.");
+      Alert.alert(t("error"), t("splitLineTooShort"));
       return;
     }
 
@@ -733,10 +733,7 @@ function AppContent() {
     // Require at least two intersections with the polygon boundary
     const intersections = (turf as any).lineIntersect(lineFeature, polyFeature);
     if (!intersections || intersections.features.length < 2) {
-      Alert.alert(
-        t("error"),
-        "Draw the line across the area so it crosses the boundary twice."
-      );
+      Alert.alert(t("error"), t("splitNeedTwoBoundaryCrossings"));
       return;
     }
 
@@ -784,10 +781,7 @@ function AppContent() {
     }
 
     if (pieces.length < 2) {
-      Alert.alert(
-        t("error"),
-        "Split did not produce two areas. Draw the line fully across the area and try again."
-      );
+      Alert.alert(t("error"), t("splitFailedPieces"));
       return;
     }
 
@@ -1005,8 +999,8 @@ function AppContent() {
 
     deleteItems(relatedIds, {
       confirm: true,
-      title: "Delete Area",
-      message: "This will also delete its subareas.",
+      title: t("deleteArea"),
+      message: t("deleteAreaWithSubareas"),
     });
   };
 

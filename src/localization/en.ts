@@ -128,6 +128,17 @@ export const en = {
   completeReposition: "Done",
   completeSplit: "Complete Split",
   cancelReposition: "Cancel",
+  splitNeedTwoPoints: "Add at least two points to split the area.",
+  splitUnsupportedGeometry: "Unsupported geometry for split.",
+  splitInvalidPolygon: "Invalid polygon for split.",
+  splitLineTooShort: "Split line is too short. Add distinct points.",
+  splitNeedTwoBoundaryCrossings:
+    "Draw the line across the area so it crosses the boundary twice.",
+  splitFailedPieces:
+    "Split did not produce two areas. Draw the line fully across the area and try again.",
+  splitTapToSelect: "Tap a piece to select it",
+  deleteArea: "Delete Area",
+  deleteAreaWithSubareas: "This will also delete its subareas.",
 
   // Language names
   english: "English",

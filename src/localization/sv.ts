@@ -130,6 +130,17 @@ export const sv: Record<TranslationKeys, string> = {
   completeReposition: "Klar",
   completeSplit: "Slutför delning",
   cancelReposition: "Avbryt",
+  splitNeedTwoPoints: "Lägg till minst två punkter för att dela området.",
+  splitUnsupportedGeometry: "Geometrin stöds inte för delning.",
+  splitInvalidPolygon: "Ogiltig polygon för delning.",
+  splitLineTooShort: "Delningslinjen är för kort. Lägg till fler punkter.",
+  splitNeedTwoBoundaryCrossings:
+    "Dra linjen över området så att den korsar gränsen två gånger.",
+  splitFailedPieces:
+    "Delningen gav inte två ytor. Dra linjen helt över området och försök igen.",
+  splitTapToSelect: "Tryck på en yta för att välja den",
+  deleteArea: "Ta bort område",
+  deleteAreaWithSubareas: "Detta tar också bort underområden.",
 
   // Language names
   english: "Engelska",
