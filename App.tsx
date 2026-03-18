@@ -1,11 +1,13 @@
 import React, { useState, useRef } from "react";
 import {
   View,
+  Text,
   Alert,
   StyleSheet,
   PanResponder,
   Dimensions,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 
 import {
@@ -82,6 +84,10 @@ function AppContent() {
   const [modalMode, setModalMode] = useState<ModalMode>("create");
   const [repositionItem, setRepositionItem] = useState<Place | null>(null);
   const [splitItem, setSplitItem] = useState<Place | null>(null);
+  const [splitPieces, setSplitPieces] = useState<
+    { geometry: GeoJSON.Geometry; areaHa: number }[] | null
+  >(null);
+  const [selectedSplitIdx, setSelectedSplitIdx] = useState<number | null>(null);
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -750,75 +756,90 @@ function AppContent() {
       return undefined;
     };
 
+    // Enter selection mode and render pieces for tap-to-select
+    const mappedPieces = pieces.map((feat: any) => ({
+      geometry: feat.geometry as GeoJSON.Geometry,
+      areaHa: geometryAreaHa(feat.geometry) || 0,
+    }));
+    setSplitPieces(mappedPieces);
+    setSelectedSplitIdx(null);
+    setDrawingMode("splitSelect");
+  };
+
+  const finalizeSplitSelection = () => {
+    if (!splitItem || !splitPieces || selectedSplitIdx === null) {
+      Alert.alert(t("error"), "Select an area to continue.");
+      return;
+    }
+
+    const isAdjusting =
+      !!splitItem.attributes?.splitLine &&
+      !!splitItem.attributes?.splitFromParentId;
+    const selected = splitPieces[selectedSplitIdx];
     const now = new Date().toISOString();
 
-    Alert.alert(
-      isAdjusting ? "Adjust subarea" : "Create subarea",
-      isAdjusting
-        ? "Choose which piece becomes the subarea after adjusting the split line"
-        : "Choose which piece becomes the new subarea",
-      pieces.slice(0, 2).map((feat: any, idx: number) => {
-        const areaHa = geometryAreaHa(feat.geometry) || 0;
-        return {
-          text: `Piece ${idx + 1} (${areaHa.toFixed(2)} ha)`,
-          onPress: () => {
-            if (isAdjusting) {
-              // Update existing subarea geometry
-              updateItem({
-                ...splitItem,
-                geometries: [
-                  {
-                    id: generateGeometryId(),
-                    geometry: feat.geometry as GeoJSON.Geometry,
-                    crs: "EPSG:4326",
-                  },
-                ],
-                attributes: {
-                  ...splitItem.attributes,
-                  areaHa: areaHa,
-                  splitLine: areaPoints,
-                },
-              });
-            } else {
-              const newPlace: Place = {
-                id: Date.now().toString(),
-                placeType: "Place_Area",
-                source: {
-                  system: "internal",
-                  importedAt: now,
-                },
-                attributes: {
-                  name: `${splitItem.attributes?.name || "Subarea"} (split)`,
-                  notes: splitItem.attributes?.notes,
-                  parentPlaceId: splitItem.id,
-                  splitFromParentId: splitItem.id,
-                  splitLine: areaPoints,
-                  color: splitItem.attributes?.color,
-                  areaHa: areaHa,
-                },
-                geometries: [
-                  {
-                    id: generateGeometryId(),
-                    geometry: feat.geometry as GeoJSON.Geometry,
-                    crs: "EPSG:4326",
-                  },
-                ],
-                visible: true,
-                createdAt: now,
-                userJournal: [],
-                media: [],
-              };
-
-              addItem(newPlace);
-            }
-
-            setSplitItem(null);
-            setDrawingMode("none");
-            setAreaPoints([]);
+    if (isAdjusting) {
+      updateItem({
+        ...splitItem,
+        geometries: [
+          {
+            id: generateGeometryId(),
+            geometry: selected.geometry,
+            crs: "EPSG:4326",
           },
-        };
-      })
-    );
+        ],
+        attributes: {
+          ...splitItem.attributes,
+          areaHa: selected.areaHa,
+          splitLine: areaPoints,
+        },
+      });
+    } else {
+      const newPlace: Place = {
+        id: Date.now().toString(),
+        placeType: "Place_Area",
+        source: {
+          system: "internal",
+          importedAt: now,
+        },
+        attributes: {
+          name: `${splitItem.attributes?.name || "Subarea"} (split)`,
+          notes: splitItem.attributes?.notes,
+          parentPlaceId: splitItem.id,
+          splitFromParentId: splitItem.id,
+          splitLine: areaPoints,
+          color: splitItem.attributes?.color,
+          areaHa: selected.areaHa,
+        },
+        geometries: [
+          {
+            id: generateGeometryId(),
+            geometry: selected.geometry,
+            crs: "EPSG:4326",
+          },
+        ],
+        visible: true,
+        createdAt: now,
+        userJournal: [],
+        media: [],
+      };
+
+      addItem(newPlace);
+    }
+
+    setSplitItem(null);
+    setSplitPieces(null);
+    setSelectedSplitIdx(null);
+    setDrawingMode("none");
+    setAreaPoints([]);
+  };
+
+  const cancelSplitSelection = () => {
+    setSplitItem(null);
+    setSplitPieces(null);
+    setSelectedSplitIdx(null);
+    setDrawingMode("none");
+    setAreaPoints([]);
   };
 
   const cancelReposition = () => {
@@ -831,6 +852,37 @@ function AppContent() {
   const clearDrawing = () => {
     setAreaPoints([]);
     setDrawingMode("none");
+  };
+
+  const handleSplitMapPress = (coord: Coordinate) => {
+    if (drawingMode !== "splitSelect" || !splitPieces) {
+      return;
+    }
+
+    const tapPoint = (turf as any).point([coord.longitude, coord.latitude]);
+
+    const hitIndex = splitPieces.findIndex((piece) => {
+      if (!piece.geometry) return false;
+      try {
+        if (piece.geometry.type === "Polygon") {
+          const poly = (turf as any).polygon(piece.geometry.coordinates as any);
+          return (turf as any).booleanPointInPolygon(tapPoint, poly);
+        }
+        if (piece.geometry.type === "MultiPolygon") {
+          const mp = (turf as any).multiPolygon(
+            piece.geometry.coordinates as any
+          );
+          return (turf as any).booleanPointInPolygon(tapPoint, mp);
+        }
+      } catch (err) {
+        console.warn("Point-in-polygon failed", err);
+      }
+      return false;
+    });
+
+    if (hitIndex >= 0) {
+      setSelectedSplitIdx(hitIndex);
+    }
   };
 
   const handleExport = async (format: "json" | "csv" | "geojson" | "all") => {
@@ -919,6 +971,13 @@ function AppContent() {
     updateItem({ ...existingItem, userJournal: history });
   };
 
+  const splitPiecesForMap = splitPieces
+    ? splitPieces.map((p, idx) => ({
+        geometry: p.geometry,
+        selected: idx === selectedSplitIdx,
+      }))
+    : undefined;
+
   if (!isLoaded) {
     return (
       <View style={styles.loadingContainer}>
@@ -951,7 +1010,35 @@ function AppContent() {
         onCompleteSplit={completeSplit}
         onCancelReposition={cancelReposition}
         onItemPress={handleView}
+        onMapPress={handleSplitMapPress}
+        splitPieces={splitPiecesForMap}
       />
+
+      {drawingMode === "splitSelect" && splitPieces && (
+        <View style={styles.splitSelectBar}>
+          <Text style={styles.splitSelectText}>Tap a piece to select it</Text>
+          <View style={styles.splitSelectButtons}>
+            <TouchableOpacity
+              onPress={cancelSplitSelection}
+              style={styles.splitButton}
+            >
+              <Text style={styles.splitButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <View style={styles.splitButtonSpacer} />
+            <TouchableOpacity
+              onPress={finalizeSplitSelection}
+              disabled={selectedSplitIdx === null}
+              style={
+                selectedSplitIdx === null
+                  ? styles.splitButtonDisabled
+                  : styles.splitButton
+              }
+            >
+              <Text style={styles.splitButtonText}>Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       <MenuToggleButton onPress={() => setMenuVisible(true)} />
 
@@ -1052,6 +1139,53 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: SWIPE_EDGE_WIDTH,
+  },
+  splitSelectBar: {
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    right: 20,
+    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  splitSelectText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  splitSelectButtons: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  splitButton: {
+    backgroundColor: "#2c7a2c",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  splitButtonDisabled: {
+    backgroundColor: "#b8b8b8",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  splitButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  splitButtonSpacer: {
+    width: 12,
   },
 });
 
