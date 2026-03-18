@@ -879,6 +879,8 @@ function AppContent() {
     setSplitItem(null);
     setSplitPieces(null);
     setSelectedSplitIdx(null);
+    setSplitLinePts([]);
+    setSplitBufferPolys(null);
     setDrawingMode("none");
     setAreaPoints([]);
   };
@@ -886,6 +888,10 @@ function AppContent() {
   const cancelReposition = () => {
     setRepositionItem(null);
     setSplitItem(null);
+    setSplitPieces(null);
+    setSelectedSplitIdx(null);
+    setSplitLinePts([]);
+    setSplitBufferPolys(null);
     setDrawingMode("none");
     setAreaPoints([]);
   };
@@ -1053,6 +1059,11 @@ function AppContent() {
         onItemPress={handleView}
         onMapPress={handleSplitMapPress}
         splitPieces={splitPiecesForMap}
+        disableItemPress={
+          drawingMode === "split" ||
+          drawingMode === "splitAdjust" ||
+          drawingMode === "splitSelect"
+        }
       />
 
       {drawingMode === "splitSelect" && splitPieces && (

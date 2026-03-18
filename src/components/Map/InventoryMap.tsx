@@ -245,6 +245,7 @@ interface InventoryMapProps {
   onItemPress?: (item: Place) => void;
   onMapPress?: (coord: Coordinate) => void;
   splitPieces?: { geometry: GeoJSON.Geometry; selected?: boolean }[];
+  disableItemPress?: boolean;
 }
 
 export interface InventoryMapRef {
@@ -273,6 +274,7 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
       onItemPress,
       onMapPress,
       splitPieces,
+      disableItemPress,
     },
     ref
   ) => {
@@ -402,12 +404,20 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
                         fillColor={hexToRgba(areaColor, 0.3)}
                         strokeWidth={2}
                         tappable
-                        onPress={() => onItemPress?.(item)}
+                        onPress={() => {
+                          if (!disableItemPress) {
+                            onItemPress?.(item);
+                          }
+                        }}
                       />
                       <Marker
                         coordinate={labelPosition}
                         anchor={{ x: 0.5, y: 0.5 }}
-                        onPress={() => onItemPress?.(item)}
+                        onPress={() => {
+                          if (!disableItemPress) {
+                            onItemPress?.(item);
+                          }
+                        }}
                       >
                         <View style={labelStyles.container}>
                           <Text style={labelStyles.name} numberOfLines={1}>
