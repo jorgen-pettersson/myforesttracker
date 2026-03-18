@@ -95,8 +95,9 @@ function AppContent() {
   >(null);
   const [splitParentGeom, setSplitParentGeom] =
     useState<GeoJSON.Geometry | null>(null);
-  const mapKey = `${places.map((p) => p.id).join("|")}|dm:${drawingMode}|ap:$
-    {areaPoints.length}|sp:${splitPieces ? splitPieces.length : 0}`;
+  const mapKey = `${places.map((p) => p.id).join("|")}|dm:${drawingMode}|ap:${
+    areaPoints.length
+  }|sp:${splitPieces ? splitPieces.length : 0}`;
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -722,6 +723,34 @@ function AppContent() {
       return;
     }
 
+    const geometryToClipPolys = (geom: GeoJSON.Geometry): number[][][][] => {
+      if (geom.type === "Polygon") {
+        return [geom.coordinates as number[][][]];
+      }
+      if (geom.type === "MultiPolygon") {
+        return geom.coordinates as number[][][][];
+      }
+      return [] as any;
+    };
+
+    // For MultiPolygon, pick the polygon that the line intersects; otherwise use first
+    const candidatePolys = geometryToClipPolys(
+      getPrimaryGeometry(parentTarget) as GeoJSON.Geometry
+    );
+    let targetPoly = candidatePolys[0];
+    for (const poly of candidatePolys) {
+      try {
+        const polyGeom = (turf as any).polygon(poly);
+        const intersects = (turf as any).lineIntersect(lineFeature, polyGeom);
+        if (intersects && intersects.features.length >= 2) {
+          targetPoly = poly;
+          break;
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
     // Use a thin buffer around the split line and subtract via polygon-clipping
     const bufferPolys: number[][][][] = [];
     let pieces: any[] = [];
@@ -739,7 +768,7 @@ function AppContent() {
       }
 
       const diffResult = polygonClipping.difference(
-        [closedOuter] as any,
+        [targetPoly] as any,
         ...(bufferPolys as any)
       );
 
@@ -759,17 +788,13 @@ function AppContent() {
     }
 
     const geometryAreaHa = (geom: GeoJSON.Geometry): number | undefined => {
-      if (geom.type === "Polygon") {
-        const ring = (geom.coordinates as number[][][])[0];
-        if (!ring) return undefined;
-        const coords = ring.map((c) => ({ latitude: c[1], longitude: c[0] }));
-        return calculateArea(coords) / 10000;
-      }
-      if (geom.type === "MultiPolygon") {
-        const poly = (geom.coordinates as number[][][][])[0]?.[0];
-        if (!poly) return undefined;
-        const coords = poly.map((c) => ({ latitude: c[1], longitude: c[0] }));
-        return calculateArea(coords) / 10000;
+      try {
+        const area = (turf as any).area(geom as any);
+        if (typeof area === "number") {
+          return area / 10000;
+        }
+      } catch (err) {
+        console.warn("Area calc failed", err);
       }
       return undefined;
     };
