@@ -92,6 +92,8 @@ function AppContent() {
   const [splitBufferPolys, setSplitBufferPolys] = useState<
     number[][][][] | null
   >(null);
+  const [splitParentGeom, setSplitParentGeom] =
+    useState<GeoJSON.Geometry | null>(null);
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -767,6 +769,7 @@ function AppContent() {
     setSelectedSplitIdx(null);
     setSplitLinePts(areaPoints);
     setSplitBufferPolys(bufferPolys);
+    setSplitParentGeom(getPrimaryGeometry(parentTarget));
     setAreaPoints([]);
     setDrawingMode("splitSelect");
   };
@@ -783,20 +786,18 @@ function AppContent() {
     const selected = splitPieces[selectedSplitIdx];
     const now = new Date().toISOString();
 
-    // Optionally union the selected piece with the buffered line to avoid gaps
+    const toCoords = (g: GeoJSON.Geometry): number[][][] => {
+      if (g.type === "Polygon") return g.coordinates as number[][][];
+      if (g.type === "MultiPolygon")
+        return (g.coordinates as number[][][][])[0];
+      return [] as any;
+    };
+
     const unionWithBuffer = (
       geom: GeoJSON.Geometry,
       buffers: number[][][][] | null
     ): GeoJSON.Geometry => {
       if (!buffers || buffers.length === 0) return geom;
-
-      const toCoords = (g: GeoJSON.Geometry): number[][][] => {
-        if (g.type === "Polygon") return g.coordinates as number[][][];
-        if (g.type === "MultiPolygon")
-          return (g.coordinates as number[][][][])[0];
-        return [] as any;
-      };
-
       const base = toCoords(geom);
       try {
         const unionResult = polygonClipping.union(
@@ -815,7 +816,35 @@ function AppContent() {
       return geom;
     };
 
-    const finalGeometry = unionWithBuffer(selected.geometry, splitBufferPolys);
+    const clipToParent = (
+      geom: GeoJSON.Geometry,
+      parentGeom: GeoJSON.Geometry | null
+    ): GeoJSON.Geometry => {
+      if (!parentGeom) return geom;
+      const geomCoords = toCoords(geom);
+      const parentCoords = toCoords(parentGeom);
+      if (!geomCoords.length || !parentCoords.length) return geom;
+      try {
+        const inter = polygonClipping.intersection(
+          geomCoords as any,
+          parentCoords as any
+        );
+        if (inter && inter.length > 0) {
+          return {
+            type: "Polygon",
+            coordinates: inter[0] as any,
+          } as GeoJSON.Geometry;
+        }
+      } catch (err) {
+        console.warn("Clip to parent failed", err);
+      }
+      return geom;
+    };
+
+    const finalGeometry = clipToParent(
+      unionWithBuffer(selected.geometry, splitBufferPolys),
+      splitParentGeom
+    );
 
     if (isAdjusting) {
       updateItem({
