@@ -803,6 +803,8 @@ function AppContent() {
       !!splitItem.attributes?.splitFromParentId;
     const selected = splitPieces[selectedSplitIdx];
     const now = new Date().toISOString();
+    setDrawingMode("none");
+    setAreaPoints([]);
 
     const toCoords = (g: GeoJSON.Geometry): number[][][] => {
       if (g.type === "Polygon") return g.coordinates as number[][][];
