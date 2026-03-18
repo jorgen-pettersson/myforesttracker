@@ -959,11 +959,21 @@ function AppContent() {
   };
 
   const handleDeleteItem = (id: string) => {
-    // If deleting a place involved in a split session, clear split state
-    if (splitItem?.id === id) {
+    // Cascade delete: remove any subareas created from this parent
+    const relatedIds = places
+      .filter(
+        (p) =>
+          p.id === id ||
+          p.attributes?.parentPlaceId === id ||
+          p.attributes?.splitFromParentId === id
+      )
+      .map((p) => p.id);
+
+    if (splitItem && relatedIds.includes(splitItem.id)) {
       resetSplitState();
     }
-    deleteItem(id);
+
+    relatedIds.forEach((targetId) => deleteItem(targetId));
   };
 
   const handleExport = async (format: "json" | "csv" | "geojson" | "all") => {
