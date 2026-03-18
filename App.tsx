@@ -94,7 +94,8 @@ function AppContent() {
   >(null);
   const [splitParentGeom, setSplitParentGeom] =
     useState<GeoJSON.Geometry | null>(null);
-  const mapKey = places.map((p) => p.id).join("|");
+  const mapKey = `${places.map((p) => p.id).join("|")}|dm:${drawingMode}|ap:$
+    {areaPoints.length}|sp:${splitPieces ? splitPieces.length : 0}`;
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -918,13 +919,7 @@ function AppContent() {
 
   const cancelReposition = () => {
     setRepositionItem(null);
-    setSplitItem(null);
-    setSplitPieces(null);
-    setSelectedSplitIdx(null);
-    setSplitLinePts([]);
-    setSplitBufferPolys(null);
-    setDrawingMode("none");
-    setAreaPoints([]);
+    resetSplitState();
   };
 
   const clearDrawing = () => {
