@@ -507,6 +507,23 @@ function AppContent() {
     setDrawingMode("none");
   };
 
+  const resetSplitState = () => {
+    setSplitItem(null);
+    setSplitPieces(null);
+    setSelectedSplitIdx(null);
+    setSplitLinePts([]);
+    setSplitBufferPolys(null);
+    setSplitParentGeom(null);
+    setAreaPoints([]);
+    if (
+      drawingMode === "split" ||
+      drawingMode === "splitAdjust" ||
+      drawingMode === "splitSelect"
+    ) {
+      setDrawingMode("none");
+    }
+  };
+
   const saveItem = () => {
     if (!currentItem.attributes?.name) {
       Alert.alert(t("error"), t("nameRequired"));
@@ -895,23 +912,11 @@ function AppContent() {
       addItem(newPlace);
     }
 
-    setSplitItem(null);
-    setSplitPieces(null);
-    setSelectedSplitIdx(null);
-    setSplitLinePts([]);
-    setSplitBufferPolys(null);
-    setDrawingMode("none");
-    setAreaPoints([]);
+    resetSplitState();
   };
 
   const cancelSplitSelection = () => {
-    setSplitItem(null);
-    setSplitPieces(null);
-    setSelectedSplitIdx(null);
-    setSplitLinePts([]);
-    setSplitBufferPolys(null);
-    setDrawingMode("none");
-    setAreaPoints([]);
+    resetSplitState();
   };
 
   const cancelReposition = () => {
@@ -959,6 +964,14 @@ function AppContent() {
     if (hitIndex >= 0) {
       setSelectedSplitIdx(hitIndex);
     }
+  };
+
+  const handleDeleteItem = (id: string) => {
+    // If deleting a place involved in a split session, clear split state
+    if (splitItem?.id === id) {
+      resetSplitState();
+    }
+    deleteItem(id);
   };
 
   const handleExport = async (format: "json" | "csv" | "geojson" | "all") => {
@@ -1148,7 +1161,7 @@ function AppContent() {
         visible={sidebarVisible}
         items={places}
         onToggleVisibility={toggleItemVisibility}
-        onDelete={deleteItem}
+        onDelete={handleDeleteItem}
         onView={handleView}
         onReposition={handleReposition}
         onSplit={handleSplit}
