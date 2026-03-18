@@ -674,18 +674,35 @@ function AppContent() {
     }
 
     const geometry = getPrimaryGeometry(parentTarget);
-    if (!geometry || geometry.type !== "Polygon") {
-      Alert.alert(t("error"), "Only simple polygons can be split right now.");
+    if (
+      !geometry ||
+      (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")
+    ) {
+      Alert.alert(t("error"), "Unsupported geometry for split.");
       return;
     }
 
-    const outer = geometry.coordinates[0] as number[][];
-    if (!outer || outer.length < 3) {
+    const geometryToClipPolys = (geom: GeoJSON.Geometry): number[][][][] => {
+      if (geom.type === "Polygon") {
+        return [geom.coordinates as number[][][]];
+      }
+      if (geom.type === "MultiPolygon") {
+        return geom.coordinates as number[][][][];
+      }
+      return [] as any;
+    };
+
+    const candidatePolys = geometryToClipPolys(geometry);
+    let baseOuter: number[][] | null = null;
+    if (candidatePolys.length > 0 && candidatePolys[0].length > 0) {
+      baseOuter = candidatePolys[0][0];
+    }
+    if (!baseOuter || baseOuter.length < 3) {
       Alert.alert(t("error"), "Invalid polygon for split.");
       return;
     }
 
-    const closedOuter = [...outer];
+    const closedOuter = [...baseOuter];
     const [firstLng, firstLat] = closedOuter[0];
     const [lastLng, lastLat] = closedOuter[closedOuter.length - 1];
     if (firstLng !== lastLng || firstLat !== lastLat) {
@@ -723,20 +740,7 @@ function AppContent() {
       return;
     }
 
-    const geometryToClipPolys = (geom: GeoJSON.Geometry): number[][][][] => {
-      if (geom.type === "Polygon") {
-        return [geom.coordinates as number[][][]];
-      }
-      if (geom.type === "MultiPolygon") {
-        return geom.coordinates as number[][][][];
-      }
-      return [] as any;
-    };
-
     // For MultiPolygon, pick the polygon that the line intersects; otherwise use first
-    const candidatePolys = geometryToClipPolys(
-      getPrimaryGeometry(parentTarget) as GeoJSON.Geometry
-    );
     let targetPoly = candidatePolys[0];
     for (const poly of candidatePolys) {
       try {
