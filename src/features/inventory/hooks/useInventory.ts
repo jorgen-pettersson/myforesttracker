@@ -52,21 +52,44 @@ export function useInventory() {
     setPlaces((prev) => updateItemWithTracking(prev, updatedPlace, actor));
   };
 
-  const deleteItem = (id: string) => {
-    Alert.alert("Delete Item", "Are you sure?", [
-      { text: "Cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          const placeToDelete = places.find((place) => place.id === id);
-          if (placeToDelete) {
-            await cleanupItemMedia(placeToDelete);
-          }
-          setPlaces((prev) => removeItemService(prev, id));
+  const deleteItems = (
+    ids: string[],
+    options?: { confirm?: boolean; title?: string; message?: string }
+  ) => {
+    const uniqueIds = Array.from(new Set(ids));
+    const doDelete = async () => {
+      for (const id of uniqueIds) {
+        const placeToDelete = places.find((place) => place.id === id);
+        if (placeToDelete) {
+          await cleanupItemMedia(placeToDelete);
+        }
+      }
+      setPlaces((prev) =>
+        prev.filter((place) => !uniqueIds.includes(place.id))
+      );
+    };
+
+    if (options?.confirm === false) {
+      doDelete();
+      return;
+    }
+
+    Alert.alert(
+      options?.title || "Delete Item",
+      options?.message || "Are you sure?",
+      [
+        { text: "Cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: doDelete,
         },
-      },
-    ]);
+      ]
+    );
+  };
+
+  const deleteItem = (id: string) => {
+    deleteItems([id]);
   };
 
   const toggleItemVisibility = (id: string) => {
@@ -87,6 +110,7 @@ export function useInventory() {
     addItem,
     updateItem,
     deleteItem,
+    deleteItems,
     toggleItemVisibility,
     calculateArea,
     importItems,

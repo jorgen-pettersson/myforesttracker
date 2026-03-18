@@ -62,6 +62,7 @@ function AppContent() {
     addItem,
     updateItem,
     deleteItem,
+    deleteItems,
     toggleItemVisibility,
     calculateArea,
     importItems,
@@ -973,7 +974,11 @@ function AppContent() {
       resetSplitState();
     }
 
-    relatedIds.forEach((targetId) => deleteItem(targetId));
+    deleteItems(relatedIds, {
+      confirm: true,
+      title: "Delete Area",
+      message: "This will also delete its subareas.",
+    });
   };
 
   const handleExport = async (format: "json" | "csv" | "geojson" | "all") => {
