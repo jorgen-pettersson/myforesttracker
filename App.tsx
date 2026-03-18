@@ -88,6 +88,10 @@ function AppContent() {
     { geometry: GeoJSON.Geometry; areaHa: number }[] | null
   >(null);
   const [selectedSplitIdx, setSelectedSplitIdx] = useState<number | null>(null);
+  const [splitLinePts, setSplitLinePts] = useState<Coordinate[]>([]);
+  const [splitBufferPolys, setSplitBufferPolys] = useState<
+    number[][][][] | null
+  >(null);
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -703,14 +707,13 @@ function AppContent() {
     }
 
     // Use a thin buffer around the split line and subtract via polygon-clipping
+    const bufferPolys: number[][][][] = [];
     let pieces: any[] = [];
     try {
-      const buffered = (turf as any).buffer(lineFeature, 0.0005, {
+      const buffered = (turf as any).buffer(lineFeature, 0.00005, {
         units: "kilometers",
       });
 
-      // Collect clipping polygons from buffer (Polygon or MultiPolygon)
-      const bufferPolys: number[][][][] = [];
       if (buffered?.geometry?.type === "Polygon") {
         bufferPolys.push(buffered.geometry.coordinates as number[][][]);
       } else if (buffered?.geometry?.type === "MultiPolygon") {
@@ -719,7 +722,6 @@ function AppContent() {
         );
       }
 
-      // Perform difference: subject is the outer ring (no holes handled for now)
       const diffResult = polygonClipping.difference(
         [closedOuter] as any,
         ...(bufferPolys as any)
@@ -763,6 +765,9 @@ function AppContent() {
     }));
     setSplitPieces(mappedPieces);
     setSelectedSplitIdx(null);
+    setSplitLinePts(areaPoints);
+    setSplitBufferPolys(bufferPolys);
+    setAreaPoints([]);
     setDrawingMode("splitSelect");
   };
 
@@ -778,20 +783,54 @@ function AppContent() {
     const selected = splitPieces[selectedSplitIdx];
     const now = new Date().toISOString();
 
+    // Optionally union the selected piece with the buffered line to avoid gaps
+    const unionWithBuffer = (
+      geom: GeoJSON.Geometry,
+      buffers: number[][][][] | null
+    ): GeoJSON.Geometry => {
+      if (!buffers || buffers.length === 0) return geom;
+
+      const toCoords = (g: GeoJSON.Geometry): number[][][] => {
+        if (g.type === "Polygon") return g.coordinates as number[][][];
+        if (g.type === "MultiPolygon")
+          return (g.coordinates as number[][][][])[0];
+        return [] as any;
+      };
+
+      const base = toCoords(geom);
+      try {
+        const unionResult = polygonClipping.union(
+          base as any,
+          ...(buffers as any)
+        );
+        if (unionResult && unionResult.length > 0) {
+          return {
+            type: "Polygon",
+            coordinates: unionResult[0] as any,
+          } as GeoJSON.Geometry;
+        }
+      } catch (err) {
+        console.warn("Union with buffer failed", err);
+      }
+      return geom;
+    };
+
+    const finalGeometry = unionWithBuffer(selected.geometry, splitBufferPolys);
+
     if (isAdjusting) {
       updateItem({
         ...splitItem,
         geometries: [
           {
             id: generateGeometryId(),
-            geometry: selected.geometry,
+            geometry: finalGeometry,
             crs: "EPSG:4326",
           },
         ],
         attributes: {
           ...splitItem.attributes,
           areaHa: selected.areaHa,
-          splitLine: areaPoints,
+          splitLine: splitLinePts,
         },
       });
     } else {
@@ -807,14 +846,14 @@ function AppContent() {
           notes: splitItem.attributes?.notes,
           parentPlaceId: splitItem.id,
           splitFromParentId: splitItem.id,
-          splitLine: areaPoints,
+          splitLine: splitLinePts,
           color: splitItem.attributes?.color,
           areaHa: selected.areaHa,
         },
         geometries: [
           {
             id: generateGeometryId(),
-            geometry: selected.geometry,
+            geometry: finalGeometry,
             crs: "EPSG:4326",
           },
         ],
@@ -830,6 +869,8 @@ function AppContent() {
     setSplitItem(null);
     setSplitPieces(null);
     setSelectedSplitIdx(null);
+    setSplitLinePts([]);
+    setSplitBufferPolys(null);
     setDrawingMode("none");
     setAreaPoints([]);
   };
@@ -1040,7 +1081,9 @@ function AppContent() {
         </View>
       )}
 
-      <MenuToggleButton onPress={() => setMenuVisible(true)} />
+      {drawingMode !== "splitSelect" && (
+        <MenuToggleButton onPress={() => setMenuVisible(true)} />
+      )}
 
       <ToolPanel
         visible={menuVisible}
