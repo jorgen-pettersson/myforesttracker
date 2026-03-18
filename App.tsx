@@ -94,6 +94,7 @@ function AppContent() {
   >(null);
   const [splitParentGeom, setSplitParentGeom] =
     useState<GeoJSON.Geometry | null>(null);
+  const mapKey = places.map((p) => p.id).join("|");
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
@@ -1106,6 +1107,7 @@ function AppContent() {
           drawingMode === "splitAdjust" ||
           drawingMode === "splitSelect"
         }
+        mapKey={mapKey}
       />
 
       {drawingMode === "splitSelect" && splitPieces && (

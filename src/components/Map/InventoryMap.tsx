@@ -246,6 +246,7 @@ interface InventoryMapProps {
   onMapPress?: (coord: Coordinate) => void;
   splitPieces?: { geometry: GeoJSON.Geometry; selected?: boolean }[];
   disableItemPress?: boolean;
+  mapKey?: string;
 }
 
 export interface InventoryMapRef {
@@ -275,6 +276,7 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
       onMapPress,
       splitPieces,
       disableItemPress,
+      mapKey,
     },
     ref
   ) => {
@@ -305,6 +307,7 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
+          key={mapKey}
           provider={PROVIDER_GOOGLE}
           style={styles.map}
           initialRegion={region}
