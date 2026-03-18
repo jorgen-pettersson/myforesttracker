@@ -440,6 +440,7 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
             })}
 
           {areaPoints.length > 0 &&
+            !splitPieces &&
             (drawingMode === "split" || drawingMode === "splitAdjust") && (
               <Polyline
                 coordinates={areaPoints}

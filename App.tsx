@@ -516,13 +516,7 @@ function AppContent() {
     setSplitBufferPolys(null);
     setSplitParentGeom(null);
     setAreaPoints([]);
-    if (
-      drawingMode === "split" ||
-      drawingMode === "splitAdjust" ||
-      drawingMode === "splitSelect"
-    ) {
-      setDrawingMode("none");
-    }
+    setDrawingMode("none");
   };
 
   const saveItem = () => {
