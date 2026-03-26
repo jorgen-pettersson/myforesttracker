@@ -187,6 +187,15 @@ const formatAreaHa = (areaHa: number | undefined): string => {
   return `${(areaHa * 10000).toFixed(0)} m²`;
 };
 
+const getMaturityText = (item: Place): string | undefined => {
+  const maturity = (item.attributes?.site as any)?.MaturityClass;
+  if (!maturity) return undefined;
+  const code = maturity.code ?? maturity;
+  const label = maturity.label ?? undefined;
+  if (!code) return undefined;
+  return label ? `${code} (${label})` : String(code);
+};
+
 const getPrimaryGeometry = (place: Place): GeoJSON.Geometry | null => {
   if (!place.geometries || place.geometries.length === 0) {
     return null;
@@ -455,6 +464,11 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
                           <Text style={labelStyles.area}>
                             {formatAreaHa(getPlaceAreaHa(item))}
                           </Text>
+                          {getMaturityText(item) ? (
+                            <Text style={labelStyles.area}>
+                              {getMaturityText(item)}
+                            </Text>
+                          ) : null}
                         </View>
                       </Marker>
                     </React.Fragment>
