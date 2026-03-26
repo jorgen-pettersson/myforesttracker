@@ -32,6 +32,7 @@ import { AttributeDefinition } from "../features/inventory/types/attributeSchema
 const MAX_MEDIA_ITEMS = 5;
 
 const PRESET_COLORS = [
+  { name: "colorDynamic", value: "dynamic", swatch: "#E0E0E0" },
   { name: "Green", value: "#00FF00" },
   { name: "Red", value: "#FF0000" },
   { name: "Blue", value: "#0000FF" },
@@ -669,8 +670,8 @@ export function ItemModal({
                       key={color.value}
                       style={[
                         colorStyles.colorButton,
-                        { backgroundColor: color.value },
-                        (item.attributes?.color || "#00FF00") === color.value &&
+                        { backgroundColor: color.swatch || color.value },
+                        (item.attributes?.color || "dynamic") === color.value &&
                           colorStyles.colorButtonSelected,
                       ]}
                       onPress={() =>
@@ -682,7 +683,13 @@ export function ItemModal({
                           },
                         })
                       }
-                    />
+                    >
+                      <Text style={colorStyles.colorButtonText}>
+                        {color.name === "colorDynamic"
+                          ? t("colorDynamic")
+                          : color.name}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
                 </View>
               </View>
@@ -1661,10 +1668,18 @@ const colorStyles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 2,
     borderColor: "#ddd",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 6,
   },
   colorButtonSelected: {
     borderColor: "#000",
     borderWidth: 3,
+  },
+  colorButtonText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#333",
   },
   colorPreview: {
     width: 30,

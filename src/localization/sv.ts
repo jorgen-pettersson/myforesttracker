@@ -130,6 +130,7 @@ export const sv: Record<TranslationKeys, string> = {
   completeReposition: "Klar",
   completeSplit: "Slutför delning",
   cancelReposition: "Avbryt",
+  dynamicColor: "Dynamisk",
   splitNeedTwoPoints: "Lägg till minst två punkter för att dela området.",
   splitUnsupportedGeometry: "Geometrin stöds inte för delning.",
   splitInvalidPolygon: "Ogiltig polygon för delning.",
@@ -141,6 +142,9 @@ export const sv: Record<TranslationKeys, string> = {
   splitTapToSelect: "Tryck på en yta för att välja den",
   deleteArea: "Ta bort område",
   deleteAreaWithSubareas: "Detta tar också bort underområden.",
+  split: "Dela",
+  adjustSplit: "Justera delning",
+  colorDynamic: "Dynamisk",
 
   // Language names
   english: "Engelska",

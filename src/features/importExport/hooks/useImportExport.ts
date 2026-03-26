@@ -734,7 +734,7 @@ export function useImportExport() {
       flattened.FILL ||
       flattened.fillColor ||
       flattened.FillColor ||
-      undefined;
+      "dynamic";
 
     const id = suffix ? `${baseId}_${suffix}` : baseId;
     const itemName = suffix ? `${name} (${suffix})` : name;

@@ -491,7 +491,7 @@ function AppContent() {
         name: "",
         notes: "",
         areaHa: area / 10000,
-        color: "#00FF00",
+        color: "dynamic",
         parentPlaceId,
       },
       geometries: [
@@ -1166,7 +1166,10 @@ function AppContent() {
       )}
 
       {drawingMode !== "splitSelect" && (
-        <MenuToggleButton onPress={() => setMenuVisible(true)} />
+        <MenuToggleButton
+          onPress={() => setMenuVisible(true)}
+          disabled={false}
+        />
       )}
 
       <ToolPanel

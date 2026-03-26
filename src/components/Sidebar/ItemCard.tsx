@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { Place } from "../../features/inventory";
 import { itemCardStyles as styles } from "../../styles";
 import { formatArea, getPlaceAreaHa } from "../../utils";
+import { useLocalization } from "../../localization";
 
 interface ItemCardProps {
   item: Place;
@@ -21,6 +22,7 @@ export function ItemCard({
   onReposition,
   onSplit,
 }: ItemCardProps) {
+  const { t } = useLocalization();
   return (
     <TouchableOpacity
       style={[styles.itemCard, item.visible === false && styles.itemCardHidden]}
@@ -67,7 +69,7 @@ export function ItemCard({
             onPress={() => onSplit(item)}
           >
             <Text style={styles.buttonText}>
-              {item.attributes?.splitLine ? "Adjust split" : "Split"}
+              {item.attributes?.splitLine ? t("adjustSplit") : t("split")}
             </Text>
           </TouchableOpacity>
         )}

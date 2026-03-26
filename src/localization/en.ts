@@ -128,6 +128,7 @@ export const en = {
   completeReposition: "Done",
   completeSplit: "Complete Split",
   cancelReposition: "Cancel",
+  dynamicColor: "Dynamic",
   splitNeedTwoPoints: "Add at least two points to split the area.",
   splitUnsupportedGeometry: "Unsupported geometry for split.",
   splitInvalidPolygon: "Invalid polygon for split.",
@@ -139,6 +140,9 @@ export const en = {
   splitTapToSelect: "Tap a piece to select it",
   deleteArea: "Delete Area",
   deleteAreaWithSubareas: "This will also delete its subareas.",
+  split: "Split",
+  adjustSplit: "Adjust split",
+  colorDynamic: "Dynamic",
 
   // Language names
   english: "English",

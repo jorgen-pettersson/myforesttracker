@@ -218,11 +218,16 @@ export function ToolPanel({
 
 interface MenuToggleButtonProps {
   onPress: () => void;
+  disabled?: boolean;
 }
 
-export function MenuToggleButton({ onPress }: MenuToggleButtonProps) {
+export function MenuToggleButton({ onPress, disabled }: MenuToggleButtonProps) {
   return (
-    <TouchableOpacity style={styles.menuToggle} onPress={onPress}>
+    <TouchableOpacity
+      style={styles.menuToggle}
+      onPress={onPress}
+      disabled={disabled}
+    >
       <Text style={styles.menuToggleText}>☰</Text>
     </TouchableOpacity>
   );
