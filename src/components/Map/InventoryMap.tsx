@@ -191,9 +191,8 @@ const getMaturityText = (item: Place): string | undefined => {
   const maturity = (item.attributes?.site as any)?.MaturityClass;
   if (!maturity) return undefined;
   const code = maturity.code ?? maturity;
-  const label = maturity.label ?? undefined;
   if (!code) return undefined;
-  return label ? `${code} (${label})` : String(code);
+  return String(code);
 };
 
 const getPrimaryGeometry = (place: Place): GeoJSON.Geometry | null => {
