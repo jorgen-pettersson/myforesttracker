@@ -18,6 +18,32 @@ import { getPlaceAreaHa } from "../../utils";
 
 const DEFAULT_AREA_COLOR = "#00FF00"; // Green
 
+// Dynamic color mapping for MaturityClass codes
+const MATURITY_COLORS: Record<string, string> = {
+  K1: "#8B0000", // Dark red
+  K2: "#FF6B6B", // Light red
+  R1: "#FFA500", // Orange
+  R2: "#FFD700", // Yellow
+  G1: "#1E90FF", // Blue
+  G2: "#1E90FF", // Blue
+  S1: "#2E8B57", // Green
+  S2: "#2E8B57", // Green
+  S3: "#2E8B57", // Green
+};
+
+const resolveAreaColor = (item: Place): string => {
+  const color = item.attributes?.color;
+  if (color && color !== "dynamic") return color;
+
+  const maturity = item.attributes?.site?.MaturityClass as any;
+  const maturityCode = maturity?.code || maturity;
+  if (maturityCode && MATURITY_COLORS[maturityCode]) {
+    return MATURITY_COLORS[maturityCode];
+  }
+
+  return DEFAULT_AREA_COLOR;
+};
+
 // Check if a point is inside a polygon using ray casting
 const pointInPolygon = (point: Coordinate, polygon: Coordinate[]): boolean => {
   let inside = false;
@@ -391,7 +417,7 @@ export const InventoryMap = forwardRef<InventoryMapRef, InventoryMapProps>(
 
               if (item.placeType === "Place_Area") {
                 const parts = getPolygonParts(geometry);
-                const areaColor = item.attributes?.color || DEFAULT_AREA_COLOR;
+                const areaColor = resolveAreaColor(item);
                 return parts.map((part, index) => {
                   if (part.outer.length === 0) {
                     return null;
