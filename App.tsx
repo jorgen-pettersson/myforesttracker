@@ -66,6 +66,7 @@ function AppContent() {
     toggleItemVisibility,
     calculateArea,
     importItems,
+    replaceAllItems,
     appendItems,
   } = useInventory();
   const {
@@ -1041,10 +1042,34 @@ function AppContent() {
         onPress: async () => {
           const importedItems = await importData();
           if (importedItems) {
-            importItems(importedItems);
+            const normalized = importedItems.map((p) => {
+              const withIds = ensureGeometryIds(p as Place);
+              const geom = withIds.geometries?.[0]?.geometry;
+              let areaHa = withIds.attributes?.areaHa;
+              if (!areaHa && geom) {
+                try {
+                  const a = (turf as any).area(geom as any);
+                  if (typeof a === "number") {
+                    areaHa = a / 10000;
+                  }
+                } catch (e) {}
+              }
+              const attrs = {
+                ...withIds.attributes,
+                areaHa,
+                color: withIds.attributes?.color || "dynamic",
+              };
+              return {
+                ...withIds,
+                attributes: attrs,
+                userJournal: withIds.userJournal || [],
+                media: withIds.media || [],
+              } as Place;
+            });
+            replaceAllItems(normalized);
             Alert.alert(
               t("success"),
-              t("importedItems", { count: importedItems.length })
+              t("importedItems", { count: normalized.length })
             );
           }
         },

@@ -100,6 +100,10 @@ export function useInventory() {
     setPlaces((prev) => importItemsWithTracking(prev, newPlaces, "geojson"));
   };
 
+  const replaceAllItems = (newPlaces: Place[]) => {
+    setPlaces(() => newPlaces);
+  };
+
   const appendItems = (newPlaces: Place[]) => {
     const importActor = getImportActor("geojson");
     setPlaces((prev) => appendItemsWithTracking(prev, newPlaces, importActor));
@@ -114,6 +118,7 @@ export function useInventory() {
     toggleItemVisibility,
     calculateArea,
     importItems,
+    replaceAllItems,
     appendItems,
   };
 }
