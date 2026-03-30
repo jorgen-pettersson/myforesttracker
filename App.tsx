@@ -1037,7 +1037,7 @@ function AppContent() {
         },
       },
       {
-        text: t("zipReplaceAll"),
+        text: t("internalBundleImport"),
         style: "destructive",
         onPress: async () => {
           const importedItems = await importData();
