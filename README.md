@@ -1,5 +1,13 @@
 # Forestry Inventory App
 
+En enkel app för att hantera sin skog..
+- Import av geojson,Forestand format 
+- Se och uppdatera avdelningar i skogsbruksplanen
+- Lägga in kommentarer med bilder för uppföljning.
+- Full historik
+Demo: https://photos.google.com/share/AF1QipMH-gqWgVC1VpCAvbKAx6O5MCe2x81N-6WuHfhBiGmRchMBl1hC9fn4iCFQ3lwJTw/photo/AF1QipMXP40ETXMlmPtzhJN2A_TBEjiJ4T65B8hQdy9s?key=MS1QNTAxOXdPRV9MZ2xyTU9mVUxQVmVUVGlXbmZn
+
+-------------------------------------------------------------------------------------------------------------------------
 A React Native mobile application for managing forestry inventory with Google Maps integration, GPS tracking, and offline capabilities.
 
 ## Features
