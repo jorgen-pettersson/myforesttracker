@@ -78,6 +78,7 @@ export const sv: Record<TranslationKeys, string> = {
   geoJsonAdd: "GeoJSON (Lägg till)",
   forestandXmlImport: "Forestand XML (Konvertera via API)",
   zipReplaceAll: "ZIP (Ersätt alla)",
+  internalBundleImport: "Internt paket (zip, ersätt alla)",
   importedItems: "Importerade {count} objekt",
   addedItems: "Lade till {count} objekt",
   exportFormat: "Exportformat",

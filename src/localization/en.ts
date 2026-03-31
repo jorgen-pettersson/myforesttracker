@@ -76,6 +76,7 @@ export const en = {
   geoJsonAdd: "GeoJSON (Add)",
   forestandXmlImport: "Forestand XML (Convert via API)",
   zipReplaceAll: "ZIP (Replace All)",
+  internalBundleImport: "Internal bundle (zip, replace all)",
   importedItems: "Imported {count} items",
   addedItems: "Added {count} items",
   exportFormat: "Export Format",

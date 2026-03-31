@@ -8,6 +8,8 @@ import {
   Dimensions,
   ActivityIndicator,
   TouchableOpacity,
+  Modal,
+  Pressable,
 } from "react-native";
 
 import {
@@ -66,6 +68,7 @@ function AppContent() {
     toggleItemVisibility,
     calculateArea,
     importItems,
+    replaceAllItems,
     appendItems,
   } = useInventory();
   const {
@@ -101,6 +104,7 @@ function AppContent() {
   const [isOnline] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
+  const [importOptionsVisible, setImportOptionsVisible] = useState(false);
 
   // GeoJSON import state
   const [propertyMappingVisible, setPropertyMappingVisible] = useState(false);
@@ -1008,48 +1012,66 @@ function AppContent() {
     await exportData(places, format);
   };
 
-  const handleImport = async () => {
-    Alert.alert(t("importData"), t("chooseFormat"), [
-      { text: t("cancel"), style: "cancel" },
-      {
-        text: t("geoJsonAdd"),
-        onPress: async () => {
-          const parsed = await parseGeoJSON();
-          if (parsed) {
-            setGeoJsonFeatures(parsed.features);
-            setGeoJsonProperties(parsed.propertyKeys);
-            setGeoJsonSuggestedName(parsed.suggestedNameKey);
-            setPropertyMappingVisible(true);
-          }
-        },
-      },
-      {
-        text: t("forestandXmlImport"),
-        onPress: async () => {
-          const parsed = await parseForestandXml();
-          if (parsed) {
-            setGeoJsonFeatures(parsed.features);
-            setGeoJsonProperties(parsed.propertyKeys);
-            setGeoJsonSuggestedName(parsed.suggestedNameKey);
-            setPropertyMappingVisible(true);
-          }
-        },
-      },
-      {
-        text: t("zipReplaceAll"),
-        style: "destructive",
-        onPress: async () => {
-          const importedItems = await importData();
-          if (importedItems) {
-            importItems(importedItems);
-            Alert.alert(
-              t("success"),
-              t("importedItems", { count: importedItems.length })
-            );
-          }
-        },
-      },
-    ]);
+  const handleImportGeoJson = async () => {
+    setImportOptionsVisible(false);
+    const parsed = await parseGeoJSON();
+    if (parsed) {
+      setGeoJsonFeatures(parsed.features);
+      setGeoJsonProperties(parsed.propertyKeys);
+      setGeoJsonSuggestedName(parsed.suggestedNameKey);
+      setPropertyMappingVisible(true);
+    }
+  };
+
+  const handleImportForestandXml = async () => {
+    setImportOptionsVisible(false);
+    const parsed = await parseForestandXml();
+    if (parsed) {
+      setGeoJsonFeatures(parsed.features);
+      setGeoJsonProperties(parsed.propertyKeys);
+      setGeoJsonSuggestedName(parsed.suggestedNameKey);
+      setPropertyMappingVisible(true);
+    }
+  };
+
+  const handleImportInternalBundle = async () => {
+    setImportOptionsVisible(false);
+    const importedItems = await importData();
+    if (importedItems) {
+      const normalized = importedItems.map((p) => {
+        const withIds = ensureGeometryIds(p as Place);
+        const geom = withIds.geometries?.[0]?.geometry;
+        let areaHa = withIds.attributes?.areaHa;
+        if (!areaHa && geom) {
+          try {
+            const a = (turf as any).area(geom as any);
+            if (typeof a === "number") {
+              areaHa = a / 10000;
+            }
+          } catch (e) {}
+        }
+        const attrs = {
+          ...withIds.attributes,
+          areaHa,
+          color: withIds.attributes?.color || "dynamic",
+        };
+        return {
+          ...withIds,
+          attributes: attrs,
+          userJournal: withIds.userJournal || [],
+          media: withIds.media || [],
+        } as Place;
+      });
+      replaceAllItems(normalized);
+      Alert.alert(
+        t("success"),
+        t("importedItems", { count: normalized.length })
+      );
+    }
+  };
+
+  const handleImport = () => {
+    setImportOptionsVisible(true);
   };
 
   const handlePropertyMappingConfirm = (
@@ -1231,6 +1253,55 @@ function AppContent() {
         onCancel={handlePropertyMappingCancel}
       />
 
+      <Modal
+        visible={importOptionsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImportOptionsVisible(false)}
+      >
+        <Pressable
+          style={styles.importOverlay}
+          onPress={() => setImportOptionsVisible(false)}
+        >
+          <Pressable style={styles.importModal}>
+            <Text style={styles.importTitle}>{t("importData")}</Text>
+            <Text style={styles.importSubtitle}>{t("chooseFormat")}</Text>
+
+            <TouchableOpacity
+              style={styles.importOption}
+              onPress={handleImportGeoJson}
+            >
+              <Text style={styles.importOptionText}>{t("geoJsonAdd")}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.importOption}
+              onPress={handleImportForestandXml}
+            >
+              <Text style={styles.importOptionText}>
+                {t("forestandXmlImport")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.importOption, styles.importDestructive]}
+              onPress={handleImportInternalBundle}
+            >
+              <Text style={styles.importOptionText}>
+                {t("internalBundleImport")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.importCancel}
+              onPress={() => setImportOptionsVisible(false)}
+            >
+              <Text style={styles.importCancelText}>{t("cancel")}</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Edge swipe zones */}
       <View style={styles.leftSwipeZone} {...leftPanResponder.panHandlers} />
       <View style={styles.rightSwipeZone} {...rightPanResponder.panHandlers} />
@@ -1316,6 +1387,61 @@ const styles = StyleSheet.create({
   },
   splitButtonSpacer: {
     width: 12,
+  },
+  importOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  importModal: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    width: "100%",
+    maxWidth: 380,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  importTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1f3d2b",
+    marginBottom: 4,
+  },
+  importSubtitle: {
+    fontSize: 14,
+    color: "#4a4a4a",
+    marginBottom: 12,
+  },
+  importOption: {
+    backgroundColor: "#f2f7f2",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  importOptionText: {
+    fontSize: 15,
+    color: "#1f3d2b",
+    fontWeight: "600",
+  },
+  importDestructive: {
+    backgroundColor: "#fbeaea",
+  },
+  importCancel: {
+    marginTop: 4,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  importCancelText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "600",
   },
 });
 
