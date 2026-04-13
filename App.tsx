@@ -1022,6 +1022,7 @@ function AppContent() {
       const dbName = "template-test.gpkg";
       const destDir = `${RNFS.DocumentDirectoryPath}/../databases`;
       const destPath = `${destDir}/${dbName}`;
+      await RNFS.mkdir(destDir).catch(() => {});
 
       if (Platform.OS === "android") {
         const resName = "template.gpkg";
@@ -1061,6 +1062,9 @@ function AppContent() {
 
       const db = open({ name: dbName, location: "default" });
 
+      // Ensure changes land in the main file (avoid WAL lingering for debugging/pulls)
+      db.execute("PRAGMA journal_mode=DELETE");
+
       db.execute(`CREATE TABLE IF NOT EXISTS export_log (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         note TEXT,
@@ -1078,6 +1082,10 @@ function AppContent() {
       );
       const row = result?.rows?.item ? result.rows.item(0) : undefined;
       setExportLog(`Wrote row id=${row?.id ?? "?"} at ${now}`);
+
+      // Flush to disk for debugging pulls
+      db.execute("PRAGMA wal_checkpoint(FULL)");
+      db.close();
       Alert.alert(t("success"), "GeoPackage test write succeeded");
     } catch (err: any) {
       console.error("GeoPackage export test failed", err);
