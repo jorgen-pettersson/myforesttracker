@@ -1025,7 +1025,16 @@ function AppContent() {
       await RNFS.mkdir(destDir).catch(() => {});
 
       if (Platform.OS === "android") {
-        await RNFS.copyFileAssets("template.gpkg", destPath);
+        const assetName = "template.gpkg";
+        try {
+          await RNFS.copyFileAssets(assetName, destPath);
+        } catch (e) {
+          try {
+            await RNFS.copyFile(`bundle-assets://${assetName}`, destPath);
+          } catch (inner) {
+            throw inner || e;
+          }
+        }
       } else {
         const srcPath = `${RNFS.MainBundlePath}/template.gpkg`;
         const exists = await RNFS.exists(srcPath);
@@ -1033,6 +1042,11 @@ function AppContent() {
           throw new Error(`Template not found at ${srcPath}`);
         }
         await RNFS.copyFile(srcPath, destPath);
+      }
+
+      const destExists = await RNFS.exists(destPath);
+      if (!destExists) {
+        throw new Error("Copied GeoPackage not found after copy");
       }
 
       const db = open({ name: destPath, location: "path" });
