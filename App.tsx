@@ -1019,8 +1019,9 @@ function AppContent() {
 
   const handleExportGeoPackage = async () => {
     try {
-      const destDir = RNFS.DocumentDirectoryPath;
-      const destPath = `${destDir}/template-test.gpkg`;
+      const dbName = "template-test.gpkg";
+      const destDir = `${RNFS.DocumentDirectoryPath}/../databases`;
+      const destPath = `${destDir}/${dbName}`;
 
       if (Platform.OS === "android") {
         const resName = "template.gpkg";
@@ -1058,7 +1059,7 @@ function AppContent() {
         );
       }
 
-      const db = open({ name: destPath, location: "path" });
+      const db = open({ name: dbName, location: "default" });
 
       db.execute(`CREATE TABLE IF NOT EXISTS export_log (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
