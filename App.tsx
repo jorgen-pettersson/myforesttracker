@@ -11,6 +11,9 @@ import {
   Modal,
   Pressable,
 } from "react-native";
+import RNFS from "react-native-fs";
+
+import { open } from "react-native-quick-sqlite";
 
 import {
   Place,
@@ -105,6 +108,7 @@ function AppContent() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [aboutVisible, setAboutVisible] = useState(false);
   const [importOptionsVisible, setImportOptionsVisible] = useState(false);
+  const [exportLog, setExportLog] = useState<string | null>(null);
 
   // GeoJSON import state
   const [propertyMappingVisible, setPropertyMappingVisible] = useState(false);
@@ -1012,6 +1016,54 @@ function AppContent() {
     await exportData(places, format);
   };
 
+  const handleExportGeoPackage = async () => {
+    try {
+      const destDir = `${RNFS.DocumentDirectoryPath}/exports`;
+      const destPath = `${destDir}/template-test.gpkg`;
+
+      await RNFS.mkdir(destDir).catch(() => {});
+
+      // Resolve template path for platform; prefer bundle-assets on Android.
+      let srcPath = `${RNFS.MainBundlePath}/src/template.gpkg`;
+      const androidSrc = "bundle-assets://src/template.gpkg";
+      const androidExists = await RNFS.exists(androidSrc);
+      if (androidExists) {
+        srcPath = androidSrc;
+      }
+
+      const exists = await RNFS.exists(srcPath);
+      if (!exists) {
+        throw new Error(`Template not found at ${srcPath}`);
+      }
+
+      await RNFS.copyFile(srcPath, destPath);
+
+      const db = open({ name: destPath, location: "path" });
+
+      db.execute(`CREATE TABLE IF NOT EXISTS export_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        note TEXT,
+        created_at TEXT
+      );`);
+
+      const now = new Date().toISOString();
+      db.execute("INSERT INTO export_log (note, created_at) VALUES (?, ?)", [
+        "GeoPackage export test",
+        now,
+      ]);
+
+      const result = db.execute(
+        "SELECT id, note, created_at FROM export_log ORDER BY id DESC LIMIT 1"
+      );
+      const row = result?.rows?.item ? result.rows.item(0) : undefined;
+      setExportLog(`Wrote row id=${row?.id ?? "?"} at ${now}`);
+      Alert.alert(t("success"), "GeoPackage test write succeeded");
+    } catch (err: any) {
+      console.error("GeoPackage export test failed", err);
+      Alert.alert(t("error"), err?.message || "GeoPackage test failed");
+    }
+  };
+
   const handleImportGeoJson = async () => {
     setImportOptionsVisible(false);
     const parsed = await parseGeoJSON();
@@ -1222,6 +1274,7 @@ function AppContent() {
         onReposition={handleReposition}
         onSplit={handleSplit}
         onExport={handleExport}
+        onExportGeoPackage={handleExportGeoPackage}
         onImport={handleImport}
         onClose={() => setSidebarVisible(false)}
       />

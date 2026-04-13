@@ -21,6 +21,7 @@ interface SidebarProps {
   onReposition: (item: Place) => void;
   onSplit: (item: Place) => void;
   onExport: (format: "json" | "csv" | "geojson" | "all") => void;
+  onExportGeoPackage?: () => void;
   onImport: () => void;
   onClose: () => void;
 }
@@ -34,6 +35,7 @@ export function Sidebar({
   onReposition,
   onSplit,
   onExport,
+  onExportGeoPackage,
   onImport,
   onClose,
 }: SidebarProps) {
@@ -92,6 +94,14 @@ export function Sidebar({
           <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
             <Text style={styles.exportText}>{t("export")}</Text>
           </TouchableOpacity>
+          {onExportGeoPackage && (
+            <TouchableOpacity
+              style={styles.exportButton}
+              onPress={onExportGeoPackage}
+            >
+              <Text style={styles.exportText}>GPKG</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.importButton} onPress={onImport}>
             <Text style={styles.exportText}>{t("import")}</Text>
           </TouchableOpacity>
