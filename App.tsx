@@ -1019,10 +1019,8 @@ function AppContent() {
 
   const handleExportGeoPackage = async () => {
     try {
-      const destDir = `${RNFS.DocumentDirectoryPath}/exports`;
+      const destDir = RNFS.DocumentDirectoryPath;
       const destPath = `${destDir}/template-test.gpkg`;
-
-      await RNFS.mkdir(destDir).catch(() => {});
 
       if (Platform.OS === "android") {
         const resName = "template.gpkg";
@@ -1047,6 +1045,17 @@ function AppContent() {
       const destExists = await RNFS.exists(destPath);
       if (!destExists) {
         throw new Error("Copied GeoPackage not found after copy");
+      }
+
+      try {
+        const stats = await RNFS.stat(destPath);
+        if (!stats.isFile() || stats.size === 0) {
+          throw new Error("Copied GeoPackage is missing or empty");
+        }
+      } catch (e) {
+        throw new Error(
+          `GeoPackage copy validation failed: ${(e as any)?.message || e}`
+        );
       }
 
       const db = open({ name: destPath, location: "path" });
