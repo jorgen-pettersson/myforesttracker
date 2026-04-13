@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Platform,
 } from "react-native";
 import RNFS from "react-native-fs";
 
@@ -1023,20 +1024,16 @@ function AppContent() {
 
       await RNFS.mkdir(destDir).catch(() => {});
 
-      // Resolve template path for platform; prefer bundle-assets on Android.
-      let srcPath = `${RNFS.MainBundlePath}/src/template.gpkg`;
-      const androidSrc = "bundle-assets://src/template.gpkg";
-      const androidExists = await RNFS.exists(androidSrc);
-      if (androidExists) {
-        srcPath = androidSrc;
+      if (Platform.OS === "android") {
+        await RNFS.copyFileAssets("template.gpkg", destPath);
+      } else {
+        const srcPath = `${RNFS.MainBundlePath}/template.gpkg`;
+        const exists = await RNFS.exists(srcPath);
+        if (!exists) {
+          throw new Error(`Template not found at ${srcPath}`);
+        }
+        await RNFS.copyFile(srcPath, destPath);
       }
-
-      const exists = await RNFS.exists(srcPath);
-      if (!exists) {
-        throw new Error(`Template not found at ${srcPath}`);
-      }
-
-      await RNFS.copyFile(srcPath, destPath);
 
       const db = open({ name: destPath, location: "path" });
 
