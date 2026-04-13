@@ -1026,13 +1026,34 @@ function AppContent() {
 
       if (Platform.OS === "android") {
         const assetName = "template.gpkg";
+        let hasAsset = true;
+        try {
+          const entries = await (RNFS.readDirAssets?.("") ?? []);
+          hasAsset = entries.some((e: any) => e.name === assetName);
+        } catch {}
+
+        if (!hasAsset) {
+          throw new Error(`GeoPackage asset ${assetName} not bundled`);
+        }
+
+        let copyError: any;
         try {
           await RNFS.copyFileAssets(assetName, destPath);
         } catch (e) {
+          copyError = e;
+        }
+
+        if (copyError) {
           try {
             await RNFS.copyFile(`bundle-assets://${assetName}`, destPath);
+            copyError = null;
           } catch (inner) {
-            throw inner || e;
+            const msg =
+              (copyError as any)?.message || (copyError as any)?.toString?.();
+            const innerMsg = (inner as any)?.message || inner?.toString?.();
+            throw new Error(
+              `Failed to copy GeoPackage from assets: ${msg} / ${innerMsg}`
+            );
           }
         }
       } else {
